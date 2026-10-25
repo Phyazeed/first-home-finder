@@ -2,7 +2,7 @@
 import { getStore } from "@netlify/blobs";
 const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
 const limits = () => getStore({ name: "fhf-limits", consistency: "strong" });
-const env = (k, d) => { const v = Netlify.env.get(k); return v === undefined || v === "" ? d : v; };
+const env = (k, d) => { let v = Netlify.env.get(k); if (typeof v === "string") v = v.trim().replace(/^["']|["']$/g, ""); return v === undefined || v === "" ? d : v; };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
 const CITIES = ["Riyadh", "Jeddah", "Al Khobar"];
@@ -34,7 +34,7 @@ async function startSearch(req, context) {
   const cached = await J.get("cache:" + key, { type: "json" });
   if (cached && Date.now() - cached.at < cacheHours * 3600e3) {
     const job = await J.get("job:" + cached.id, { type: "json" });
-    if (job && job.status === "done") return json({ id: cached.id, cached: true });
+    if (job && job.status === "done" && (job.listings || []).length) return json({ id: cached.id, cached: true });
   }
 
   const ipHash = await sha((context.ip || "unknown") + today);
@@ -66,10 +66,10 @@ async function searchStatus(req) {
   return json(pub);
 }
 
-const API_V = "v7-2026-10-26";
+const API_V = "v9-2026-10-26";
 export default async (req, context) => {
   const p = new URL(req.url).pathname;
-  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), keyId: (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
+  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), keyId: (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6), keyLooksRight: /^sk-ant-api\d\d-[A-Za-z0-9_-]{80,}$/.test(env("ANTHROPIC_API_KEY", "")), keyLength: env("ANTHROPIC_API_KEY", "").length, keyStart: env("ANTHROPIC_API_KEY", "").slice(0, 10), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
   return p.endsWith("/search-status") ? searchStatus(req) : startSearch(req, context);
 };
 
