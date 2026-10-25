@@ -228,8 +228,8 @@ svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
   <section class="sec concl" id="concl" aria-label="Your conclusion" hidden></section>
   <section class="sec live" id="livePanel" aria-label="Live search" hidden>
     <div class="cl-head"><div><span class="eyebrow">Live search · بحث مباشر</span><h2>Search current listings for you</h2>
-      <p style="margin:0" id="liveIntro">Claude searches Aqar, Bayut, Property Finder and Wasalt right now for apartments in your cities, price range and bedroom count, then every result is scored against your profile. It takes one to three minutes. Only your cities, price range, bedrooms and goal are sent; your salary and savings stay in this browser.</p></div>
-      <button class="btn" id="liveGo">Search now</button></div>
+      <p style="margin:0" id="liveIntro">When you finish the questions, Claude searches Aqar, Bayut, Property Finder and Wasalt for current apartments in your cities, price range and bedroom count, and every result is scored against your profile. Results appear city by city, usually within a minute. Only your cities, price range, bedrooms and goal are sent; your salary and savings stay in this browser.</p></div>
+      <button class="btn" id="liveGo">Search again</button></div>
     <p class="note" id="liveStatus" role="status" style="margin:0"></p>
   </section>
 
@@ -784,7 +784,7 @@ function renderWiz(){const el=document.getElementById("wiz");const st=STEPS[wiz.
 function werr(m){document.getElementById("werr").textContent=m}
 function openWiz(){const cur=loadProfile();wiz.draft=Object.assign({},EXAMPLE,cur||{salary:0,cash:0});wiz.step=0;
   ["strip","controls","dealsSec","concl","livePanel"].forEach(i=>document.getElementById(i).hidden=true);const w=document.getElementById("wiz");w.hidden=false;renderWiz();w.scrollIntoView({block:"start"})}
-function finishWiz(p,example){p.example=!!example;saveProfile(p);applyProfile(p);showResults()}
+function finishWiz(p,example){p.example=!!example;saveProfile(p);applyProfile(p);showResults();if(!example)setTimeout(runLive,50)}
 function applyProfile(p){Object.assign(PROFILE,p);derive();
   const fb=document.getElementById("fBudget");const mx=Math.max(900000,Math.ceil(budget(state.s).maxPrice/50000)*50000);fb.max=Math.min(mx,1500000);fb.value=fb.max;state.f.max=+fb.max;
   if(typeof syncR==="function")syncR();mapS.b=null}
@@ -851,21 +851,24 @@ function liveToDeals(res){
       qs:["Is it still available at this price?","Electronic title deed and completion certificate?","Floor, elevator and parking?","Was it leased before? Last Ejar rent?","Any commission, and will you accept bank financing?"],
       verdict:"Live search result. Its score uses the asking prices found in this search as the benchmark, so treat it as a first filter and check the advert before acting.",liveSrc:`Live search, ${date}, via ${l.source||"listing site"}.`,src:[]})});
 }
-function liveCriteria(){const b=budget(state.s);return {cities:PROFILE.cities,maxPrice:Math.max(150000,Math.round(b.maxPrice*1.15)),minBeds:PROFILE.minBeds,goal:PROFILE.goal}}
+function liveCriteria(){const b=budget(state.s);return {cities:PROFILE.cities,maxPrice:Math.max(150000,Math.round(b.maxPrice*1.15)),minBeds:PROFILE.minBeds}}
 function liveMsg(t){document.getElementById("liveStatus").textContent=t}
 let livePoll=null;
 async function runLive(){const btn=document.getElementById("liveGo");btn.disabled=true;clearTimeout(livePoll);
   const crit=liveCriteria();liveMsg(`Starting a search for ${crit.cities.join(", ")} up to ${fmt(crit.maxPrice)} SAR…`);
   let r,j;try{r=await fetch("/api/search-start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(crit)});j=await r.json()}catch(e){btn.disabled=false;return liveMsg("Live search only works on the published website, where its server functions run. Here you can still browse the saved listings below.")}
   if(!r.ok||!j.id){btn.disabled=false;return liveMsg(j&&j.error?j.error:"The search could not start. Try again in a minute.")}
-  const t0=Date.now();const tick=async()=>{let s;try{s=await (await fetch("/api/search-status?id="+j.id)).json()}catch(e){s={}}
+  const t0=Date.now();let shown=0;const tick=async()=>{let st;try{st=await (await fetch("/api/search-status?id="+j.id)).json()}catch(e){st={}}
     const sec=Math.round((Date.now()-t0)/1000);
-    if(s.status==="done"){btn.disabled=false;try{localStorage.setItem(LKEY,JSON.stringify({at:Date.now(),crit,res:s}))}catch(e){}showLive(s,j.cached);return}
-    if(s.status==="error"){btn.disabled=false;return liveMsg("The search failed: "+(s.message||"unknown error")+". Try again later.")}
-    if(sec>300){btn.disabled=false;return liveMsg("The search is taking too long. Try again later.")}
-    liveMsg(`Searching listing sites… ${sec}s (usually 60–180s). You can keep browsing.`);livePoll=setTimeout(tick,4000)};tick()}
-function showLive(s,cached){liveToDeals(s);mapS.b=null;render();const n=(s.listings||[]).length;
-  liveMsg(n?`Found ${n} current listing${n>1?"s":""}${cached?" (reused from a search for the same budget in the last few hours)":""}. They are marked "Live result" below and included in your conclusion.${s.dropped?` ${s.dropped} more ${s.dropped>1?"were":"was"} left out because their link or numbers could not be checked against the search results.`:""}${s.note?" "+s.note:""}`:"The search found no listings it could verify for your criteria. Try more cities or fewer bedrooms.")}
+    if(st.status==="done"){btn.disabled=false;try{localStorage.setItem(LKEY,JSON.stringify({at:Date.now(),crit,res:st}))}catch(e){}showLive(st,j.cached);return}
+    if(st.status==="error"){btn.disabled=false;return liveMsg("The search failed: "+(st.message||"unknown error")+".")}
+    if(st.status==="queued"&&sec>60){btn.disabled=false;return liveMsg("The search worker did not start. On Netlify, check Logs → Functions shows search-run-background, then try again.")}
+    if(st.status==="running"&&(st.listings||[]).length>shown){shown=st.listings.length;liveToDeals(st);render()}
+    if(sec>360){btn.disabled=false;return liveMsg(`The search stopped responding${st.pending&&st.pending.length?" while searching "+st.pending.join(", "):""}. ${shown?"The results found so far are shown below.":""} Try again later.`)}
+    const pend=st.pending&&st.pending.length?` Still searching ${st.pending.join(", ")}.`:"";
+    liveMsg(`Searching listing sites… ${sec}s.${shown?` ${shown} found so far, shown below.`:""}${pend} Usually under a minute.`);livePoll=setTimeout(tick,3000)};tick()}
+function showLive(s,cached){liveToDeals(s);mapS.b=null;render();const n=(s.listings||[]).length;const fail=(s.failed||[]).length?` Could not search ${s.failed.map(f=>f.city).join(", ")} this time.`:"";
+  liveMsg(n?`Found ${n} current listing${n>1?"s":""}${cached?" (reused from a search for the same budget in the last few hours)":""}. They are marked "Live result" below and included in your conclusion.${s.dropped?` ${s.dropped} more ${s.dropped>1?"were":"was"} left out because their link or numbers could not be checked against the search results.`:""}${s.note?" "+s.note:""}${fail}`:"The search found no listings it could verify for your criteria. Try more cities or fewer bedrooms."+fail)}
 document.getElementById("liveGo").addEventListener("click",runLive);
 try{const v=JSON.parse(localStorage.getItem(LKEY)||"null");if(v&&Date.now()-v.at<24*3600e3&&v.res&&v.res.listings)setTimeout(()=>{liveToDeals(v.res);render();liveMsg(`Showing the live search from ${new Date(v.at).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}. Search again for fresh results.`)},0)}catch(e){}
 function boot(){const p=loadProfile();if(p){applyProfile(p);showResults();window.scrollTo(0,0)}else openWiz()}
