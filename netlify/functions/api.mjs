@@ -52,7 +52,8 @@ async function startSearch(req, context) {
   await J.setJSON("cache:" + key, { id, at: Date.now() });
 
   const origin = new URL(req.url).origin;
-  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json", "x-fhf-secret": await sha(env("ANTHROPIC_API_KEY") + "run") }, body: JSON.stringify({ id, crit, at: Date.now() }) });
+  const token = await sha(env("ANTHROPIC_API_KEY") + "run" + id); // in the body: Netlify does not pass custom headers on to background functions
+  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, crit, at: Date.now(), token }) });
   if (r.status !== 202) { await J.setJSON("job:" + id, { status: "error", message: "The search could not be started." }); return json({ error: "The search could not be started. Try again in a minute." }, 502); }
   return json({ id });
 }
@@ -66,7 +67,7 @@ async function searchStatus(req) {
   return json(pub);
 }
 
-const API_V = "v5-2026-10-26";
+const API_V = "v6-2026-10-26";
 export default async (req, context) => {
   const p = new URL(req.url).pathname;
   if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });

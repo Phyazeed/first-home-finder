@@ -4,7 +4,7 @@ const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
 const env = (k, d) => { const v = Netlify.env.get(k); return v === undefined || v === "" ? d : v; };
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
 
-const WORKER_V = "v5-2026-10-26";
+const WORKER_V = "v6-2026-10-26";
 const SITES =["aqar.fm", "bayut.sa", "propertyfinder.sa", "wasalt.sa"];
 const DISTRICTS = {
   Riyadh: "North: Al Malqa, Al Yasmin, Al Narjis, Al Arid, Hittin, Al Qirawan, Al Nada, Al Sahafa. East: Al Rimal, Qurtubah, Al Yarmuk, Ishbiliyah, Al Munsiyah, Al Nahdah, Ghirnatah",
@@ -85,7 +85,7 @@ export default async (req) => {
     // Leave a trace so the status page can say exactly why a search stopped (version WORKER_V).
     const fail = (message) => J.setJSON("job:" + id, { status: "error", message: `${message} [worker ${WORKER_V}]` });
     if (!env("ANTHROPIC_API_KEY")) return fail("The search worker cannot see ANTHROPIC_API_KEY. In Netlify, edit that variable and make sure its scopes include Functions, then redeploy.");
-    if (req.headers.get("x-fhf-secret") !== await sha(env("ANTHROPIC_API_KEY") + "run")) return fail("The search worker rejected the start request. Upload the latest api.mjs and search-run-background.mjs together, then redeploy.");
+    if (body.token !== await sha(env("ANTHROPIC_API_KEY") + "run" + id)) return fail("The search worker rejected the start request. Upload the latest api.mjs and search-run-background.mjs together, then redeploy.");
     const job = (await J.get("job:" + id, { type: "json" })) || (body.crit ? { status: "queued", crit: body.crit, at: body.at || Date.now() } : null);
     if (!job || job.status !== "queued") return;
     if (!job.crit || !Array.isArray(job.crit.cities)) return fail("The search criteria did not reach the worker.");
