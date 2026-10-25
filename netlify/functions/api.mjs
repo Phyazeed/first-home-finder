@@ -66,10 +66,10 @@ async function searchStatus(req) {
   return json(pub);
 }
 
-const API_V = "v9-2026-10-26";
+const API_V = "v10-2026-10-26";
 export default async (req, context) => {
   const p = new URL(req.url).pathname;
-  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), keyId: (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6), keyLooksRight: /^sk-ant-api\d\d-[A-Za-z0-9_-]{80,}$/.test(env("ANTHROPIC_API_KEY", "")), keyLength: env("ANTHROPIC_API_KEY", "").length, keyStart: env("ANTHROPIC_API_KEY", "").slice(0, 10), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
+  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), keyId: (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6), keyLooksRight: /^sk-ant-[a-z]{3}\d\d-[A-Za-z0-9_-]{80,}$/.test(env("ANTHROPIC_API_KEY", "")), keyLength: env("ANTHROPIC_API_KEY", "").length, keyStart: env("ANTHROPIC_API_KEY", "").slice(0, 10), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
   return p.endsWith("/search-status") ? searchStatus(req) : startSearch(req, context);
 };
 

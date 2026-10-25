@@ -4,7 +4,7 @@ const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
 const env = (k, d) => { let v = Netlify.env.get(k); if (typeof v === "string") v = v.trim().replace(/^["']|["']$/g, ""); return v === undefined || v === "" ? d : v; };
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
 
-const WORKER_V = "v9-2026-10-26";
+const WORKER_V = "v10-2026-10-26";
 const SITES =["aqar.fm", "bayut.sa", "propertyfinder.sa", "wasalt.sa"];
 const DISTRICTS = {
   Riyadh: "North: Al Malqa, Al Yasmin, Al Narjis, Al Arid, Hittin, Al Qirawan, Al Nada, Al Sahafa. East: Al Rimal, Qurtubah, Al Yarmuk, Ishbiliyah, Al Munsiyah, Al Nahdah, Ghirnatah",
@@ -34,7 +34,7 @@ async function callClaude(messages, signal) {
     method: "POST", signal,
     headers: { "x-api-key": env("ANTHROPIC_API_KEY"), "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
-      model: env("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens: 3000, system: SYSTEM, messages,
+      model: env("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens: Number(env("MAX_OUTPUT_TOKENS", "8000")), thinking: { type: "disabled" }, system: SYSTEM, messages,
       tools: [{ type: "web_search_20250305", name: "web_search", max_uses: Number(env("MAX_WEB_SEARCHES", "3")), allowed_domains: SITES, allowed_callers: ["direct"], user_location: { type: "approximate", country: "SA", timezone: "Asia/Riyadh" } }],
     }),
   });
@@ -68,6 +68,7 @@ async function searchCity(city, crit) {
         if (b.type === "web_search_tool_result" && Array.isArray(b.content)) b.content.forEach(x => x.url && seen.set(normUrl(x.url), x.url));
         if (b.type === "web_search_tool_result" && b.content && b.content.error_code) usage.searchError = b.content.error_code;
         if (b.type === "text") text += b.text;
+        if (b.type === "thinking" || b.type === "redacted_thinking") usage.thinkingBlocks = (usage.thinkingBlocks || 0) + 1;
       }
       if (res.stop_reason !== "pause_turn") break;
       messages.push({ role: "assistant", content: res.content });
