@@ -1,7 +1,7 @@
 // Saudi First Home Finder: starts a live search and reports its progress.
 import { getStore } from "@netlify/blobs";
-const jobs = () => getStore("fhf-jobs");
-const limits = () => getStore("fhf-limits");
+const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
+const limits = () => getStore({ name: "fhf-limits", consistency: "strong" });
 const env = (k, d) => { const v = Netlify.env.get(k); return v === undefined || v === "" ? d : v; };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
@@ -52,7 +52,7 @@ async function startSearch(req, context) {
   await J.setJSON("cache:" + key, { id, at: Date.now() });
 
   const origin = new URL(req.url).origin;
-  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json", "x-fhf-secret": await sha(env("ANTHROPIC_API_KEY") + "run") }, body: JSON.stringify({ id }) });
+  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json", "x-fhf-secret": await sha(env("ANTHROPIC_API_KEY") + "run") }, body: JSON.stringify({ id, crit, at: Date.now() }) });
   if (r.status !== 202) { await J.setJSON("job:" + id, { status: "error", message: "The search could not be started." }); return json({ error: "The search could not be started. Try again in a minute." }, 502); }
   return json({ id });
 }
@@ -66,6 +66,11 @@ async function searchStatus(req) {
   return json(pub);
 }
 
-export default async (req, context) => new URL(req.url).pathname.endsWith("/search-status") ? searchStatus(req) : startSearch(req, context);
+const API_V = "v5-2026-10-26";
+export default async (req, context) => {
+  const p = new URL(req.url).pathname;
+  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
+  return p.endsWith("/search-status") ? searchStatus(req) : startSearch(req, context);
+};
 
-export const config = { path: ["/api/search-start", "/api/search-status"] };
+export const config = { path: ["/api/search-start", "/api/search-status", "/api/version"] };
