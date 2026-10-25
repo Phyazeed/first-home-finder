@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<meta name="fhf-version" content="v5-2026-10-26">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Saudi First Home Finder</title>
@@ -228,7 +229,7 @@ svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
   <section class="sec concl" id="concl" aria-label="Your conclusion" hidden></section>
   <section class="sec live" id="livePanel" aria-label="Live search" hidden>
     <div class="cl-head"><div><span class="eyebrow">Live search · بحث مباشر</span><h2>Search current listings for you</h2>
-      <p style="margin:0" id="liveIntro">When you finish the questions, Claude searches Aqar, Bayut, Property Finder and Wasalt for current apartments in your cities, price range and bedroom count, and every result is scored against your profile. Results appear city by city, usually within a minute. Only your cities, price range, bedrooms and goal are sent; your salary and savings stay in this browser.</p></div>
+      <p style="margin:0" id="liveIntro">When you finish the questions, Claude searches Aqar, Bayut, Property Finder and Wasalt for current apartments in your cities, price range and bedroom count, and every result is scored against your profile. Results appear city by city, usually within a minute. Only your cities, price range and bedrooms are sent; your salary and savings stay in this browser.</p></div>
       <button class="btn" id="liveGo">Search again</button></div>
     <p class="note" id="liveStatus" role="status" style="margin:0"></p>
   </section>
@@ -862,7 +863,7 @@ async function runLive(){const btn=document.getElementById("liveGo");btn.disable
     const sec=Math.round((Date.now()-t0)/1000);
     if(st.status==="done"){btn.disabled=false;try{localStorage.setItem(LKEY,JSON.stringify({at:Date.now(),crit,res:st}))}catch(e){}showLive(st,j.cached);return}
     if(st.status==="error"){btn.disabled=false;return liveMsg("The search failed: "+(st.message||"unknown error")+".")}
-    if(st.status==="queued"&&sec>60){btn.disabled=false;return liveMsg("The search worker did not start. On Netlify, check Logs → Functions shows search-run-background, then try again.")}
+    if(st.status==="queued"&&sec>120){btn.disabled=false;return liveMsg("The search worker did not start. The site owner should upload the latest api.mjs and search-run-background.mjs into netlify/functions and redeploy.")}
     if(st.status==="running"&&(st.listings||[]).length>shown){shown=st.listings.length;liveToDeals(st);render()}
     if(sec>360){btn.disabled=false;return liveMsg(`The search stopped responding${st.pending&&st.pending.length?" while searching "+st.pending.join(", "):""}. ${shown?"The results found so far are shown below.":""} Try again later.`)}
     const pend=st.pending&&st.pending.length?` Still searching ${st.pending.join(", ")}.`:"";
