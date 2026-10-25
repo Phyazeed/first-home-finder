@@ -47,13 +47,12 @@ async function startSearch(req, context) {
   await L.setJSON(`ip:${today}:${ipHash}`, ipCount + 1);
   await L.setJSON(`day:${today}`, dayCount + 1);
 
-  const id = crypto.randomUUID();
-  await J.setJSON("job:" + id, { status: "queued", crit, at: Date.now() });
+  const id = crypto.randomUUID(), token = crypto.randomUUID(); // one-time token the worker checks against the stored job
+  await J.setJSON("job:" + id, { status: "queued", crit, at: Date.now(), token });
   await J.setJSON("cache:" + key, { id, at: Date.now() });
 
   const origin = new URL(req.url).origin;
-  const token = await sha(env("ANTHROPIC_API_KEY") + "run" + id); // in the body: Netlify does not pass custom headers on to background functions
-  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, crit, at: Date.now(), token }) });
+  const r = await fetch(origin + "/api/search-run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, token }) });
   if (r.status !== 202) { await J.setJSON("job:" + id, { status: "error", message: "The search could not be started." }); return json({ error: "The search could not be started. Try again in a minute." }, 502); }
   return json({ id });
 }
@@ -63,14 +62,14 @@ async function searchStatus(req) {
   if (!/^[0-9a-f-]{36}$/.test(id)) return json({ error: "Unknown search." }, 400);
   const job = await jobs().get("job:" + id, { type: "json" });
   if (!job) return json({ error: "Unknown search." }, 404);
-  const { crit, ...pub } = job;
+  const { crit, token, ...pub } = job;
   return json(pub);
 }
 
-const API_V = "v6-2026-10-26";
+const API_V = "v7-2026-10-26";
 export default async (req, context) => {
   const p = new URL(req.url).pathname;
-  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
+  if (p.endsWith("/version")) return json({ api: API_V, keySet: !!env("ANTHROPIC_API_KEY"), keyId: (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6), perVisitor: Number(env("MAX_SEARCHES_PER_VISITOR_PER_DAY", "3")) });
   return p.endsWith("/search-status") ? searchStatus(req) : startSearch(req, context);
 };
 

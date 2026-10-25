@@ -4,7 +4,7 @@ const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
 const env = (k, d) => { const v = Netlify.env.get(k); return v === undefined || v === "" ? d : v; };
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
 
-const WORKER_V = "v6-2026-10-26";
+const WORKER_V = "v7-2026-10-26";
 const SITES =["aqar.fm", "bayut.sa", "propertyfinder.sa", "wasalt.sa"];
 const DISTRICTS = {
   Riyadh: "North: Al Malqa, Al Yasmin, Al Narjis, Al Arid, Hittin, Al Qirawan, Al Nada, Al Sahafa. East: Al Rimal, Qurtubah, Al Yarmuk, Ishbiliyah, Al Munsiyah, Al Nahdah, Ghirnatah",
@@ -83,14 +83,16 @@ export default async (req) => {
     if (!id) return;
     const J = jobs();
     // Leave a trace so the status page can say exactly why a search stopped (version WORKER_V).
-    const fail = (message) => J.setJSON("job:" + id, { status: "error", message: `${message} [worker ${WORKER_V}]` });
+    const keyId = (await sha(env("ANTHROPIC_API_KEY", ""))).slice(0, 6);
+    const fail = (message) => J.setJSON("job:" + id, { status: "error", message: `${message} [worker ${WORKER_V}, key ${keyId}]` });
     if (!env("ANTHROPIC_API_KEY")) return fail("The search worker cannot see ANTHROPIC_API_KEY. In Netlify, edit that variable and make sure its scopes include Functions, then redeploy.");
-    if (body.token !== await sha(env("ANTHROPIC_API_KEY") + "run" + id)) return fail("The search worker rejected the start request. Upload the latest api.mjs and search-run-background.mjs together, then redeploy.");
-    const job = (await J.get("job:" + id, { type: "json" })) || (body.crit ? { status: "queued", crit: body.crit, at: body.at || Date.now() } : null);
-    if (!job || job.status !== "queued") return;
+    const job = await J.get("job:" + id, { type: "json" });
+    if (!job) return fail("The search worker could not find this search. Try again.");
+    if (job.status !== "queued") return;
+    if (!job.token || body.token !== job.token) return fail("The search worker rejected the start request. Upload the latest api.mjs and search-run-background.mjs together, then redeploy.");
     if (!job.crit || !Array.isArray(job.crit.cities)) return fail("The search criteria did not reach the worker.");
     const crit = job.crit; const cacheMs = Number(env("CACHE_HOURS", "6")) * 3600e3;
-    const state = { status: "running", worker: WORKER_V, at: job.at, startedAt: Date.now(), listings: [], done: [], failed: [], pending: [...crit.cities], dropped: 0, notes: [] };
+    const state = { status: "running", worker: WORKER_V, keyId, at: job.at, startedAt: Date.now(), listings: [], done: [], failed: [], pending: [...crit.cities], dropped: 0, notes: [] };
     const save = () => J.setJSON("job:" + id, state);
     await save();
     let chain = Promise.resolve(); const queueSave = () => (chain = chain.then(save)); // keep blob writes in order
