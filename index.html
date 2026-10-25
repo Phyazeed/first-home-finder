@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Saudi First Home Finder</title>
+<meta name="description" content="Answer six questions about your income and savings, and see which Riyadh, Jeddah and Khobar apartments you can afford, with a plain-language conclusion.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column — verdict strip, controls, deal grid, slide-in detail sheet, reference tables below. */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --sunk:#E9EDE9; --ink:#15211E; --muted:#5B6964; --line:#D6DDD9;
+  --accent:#0A6B5F; --accent-ink:#FFFFFF; --accent-soft:#DCEEEA;
+  --tilefx:none; --good:#1D7F45; --good-soft:#DDF2E4; --warn:#9A6212; --warn-soft:#F6EBD6; --bad:#B23A12; --bad-soft:#F8E1D8;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1513; --surface:#151E1B; --sunk:#1B2623; --ink:#E4ECE9; --muted:#93A39D; --line:#28352F;
+  --accent:#3FC0AB; --accent-ink:#06211C; --accent-soft:#163A33;
+  --tilefx:invert(.9) hue-rotate(180deg) brightness(.95) contrast(.85) saturate(.6); --good:#5BD08A; --good-soft:#163323; --warn:#E3B05A; --warn-soft:#3A2C14; --bad:#F08A63; --bad-soft:#3D1F15; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1513; --surface:#151E1B; --sunk:#1B2623; --ink:#E4ECE9; --muted:#93A39D; --line:#28352F;
+  --accent:#3FC0AB; --accent-ink:#06211C; --accent-soft:#163A33;
+  --tilefx:invert(.9) hue-rotate(180deg) brightness(.95) contrast(.85) saturate(.6); --good:#5BD08A; --good-soft:#163323; --warn:#E3B05A; --warn-soft:#3A2C14; --bad:#F08A63; --bad-soft:#3D1F15; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(22px,3.4vw,30px);font-weight:700}
+h2{font-size:19px;font-weight:600}
+h3{font-size:15px;font-weight:600}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header strip */
+.head{display:grid;gap:10px}
+.head p{margin:0;max-width:72ch;color:var(--muted)}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.strip>div{background:var(--surface);padding:14px 16px;display:grid;gap:4px;min-width:0}
+.strip .big{font-family:var(--f-display);font-size:22px;font-weight:600}
+.picks{display:grid;gap:3px;font-size:13.5px}
+.picks button{all:unset;cursor:pointer;color:var(--accent);font-weight:500}
+.picks button:hover{text-decoration:underline}
+@media (max-width:820px){.strip{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.strip{grid-template-columns:1fr}}
+
+.verdict{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:10px;padding:12px 16px;font-size:14px}
+.verdict b{color:var(--warn)}
+
+/* controls */
+.controls{display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end}
+.ctl{display:grid;gap:4px;min-width:0}
+.ctl label,.ctl .lbl{font-size:12px;color:var(--muted);font-weight:500}
+select,input[type=range]{font:inherit;font-size:14px}
+select{background:var(--sunk);border:1px solid var(--line);border-radius:7px;padding:6px 8px;color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:var(--sunk);border:0;padding:6px 10px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.ctl output{font-family:var(--f-mono);font-size:12.5px}
+.divider{height:1px;background:var(--line)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}
+.card-top{display:flex;gap:10px;align-items:start}
+.icon{flex:none;width:42px;height:42px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
+.icon svg{width:24px;height:24px}
+.ttl{min-width:0;flex:1;display:grid;gap:1px}
+.ttl h3{font-size:14.5px}
+.ttl .ar{font-size:12.5px;color:var(--muted)}
+.score{flex:none;display:grid;justify-items:center;padding:4px 8px;border-radius:8px;min-width:52px}
+.score b{font-family:var(--f-display);font-size:20px;line-height:1}
+.score span{font-size:9.5px;letter-spacing:.06em;font-weight:600}
+.s-strong{background:var(--good-soft);color:var(--good)}
+.s-good{background:var(--accent-soft);color:var(--accent)}
+.s-fair{background:var(--warn-soft);color:var(--warn)}
+.s-pass{background:var(--bad-soft);color:var(--bad)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dashed var(--line);padding-bottom:3px;min-width:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:end}
+.price{font-family:var(--f-display);font-size:21px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.in{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:var(--good-soft)}
+.chip.stretch{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:var(--warn-soft)}
+.chip.out{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:var(--bad-soft)}
+.chip.freeze{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.below{color:var(--good)} .above{color:var(--bad)}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;justify-self:start}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.empty{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:12px}
+
+/* detail sheet */
+.scrim{position:fixed;inset:0;background:color-mix(in srgb,#000 45%,transparent);z-index:20}
+.sheet{position:fixed;top:0;bottom:0;right:0;width:min(760px,100%);background:var(--bg);z-index:21;overflow-y:auto;border-left:1px solid var(--line);
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(32px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.sheet-in{display:grid;gap:16px}
+.sheet-head{display:flex;gap:12px;align-items:start;justify-content:space-between}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:620px){.two{grid-template-columns:1fr}}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:end;white-space:nowrap}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:150px 1fr 86px;gap:8px;align-items:center;font-size:12.5px}
+.bar .track{height:12px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--muted)}
+.bar .fill.me{background:var(--accent)}
+.bar .v{font-family:var(--f-mono);text-align:end}
+@media (max-width:460px){.bar{grid-template-columns:100px 1fr 72px}}
+.sb{display:grid;gap:6px}
+.sb .r{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px}
+.sb .r small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.sb .t{height:6px;background:var(--sunk);border-radius:3px;grid-column:1/-1;overflow:hidden}
+.sb .t i{display:block;height:100%;background:var(--accent)}
+ul.flags{margin:0;padding-inline-start:18px;display:grid;gap:4px;font-size:13.5px}
+ul.flags li::marker{color:var(--bad)}
+ul.qs{margin:0;padding-inline-start:18px;display:grid;gap:4px;font-size:13.5px}
+.cf{font-family:var(--f-display);font-size:22px;font-weight:600}
+.est{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:4px;padding:0 4px;vertical-align:1px}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.ln{fill:none;stroke:var(--accent);stroke-width:2}
+.dot{fill:var(--accent)}
+.gridl{stroke:var(--line);stroke-width:1}
+.note{font-size:12.5px;color:var(--muted)}
+.src{font-size:13px;display:grid;gap:5px;margin:0;padding-inline-start:18px}
+.foot{font-size:12.5px;color:var(--muted)}
+/* map view */
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px}
+.maptools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.crumbs{font-family:var(--f-display);font-weight:600;font-size:15px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumbs button{all:unset;cursor:pointer;color:var(--accent)} .crumbs button:hover{text-decoration:underline}
+#mapSvg{touch-action:none;cursor:grab;aspect-ratio:760/460;background:var(--sunk)}
+#mapSvg.drag{cursor:grabbing}
+.mapsvg .land{fill:var(--surface);stroke:var(--muted);stroke-width:1.2;stroke-linejoin:round}
+.mapsvg .sea{fill:var(--muted);font-family:var(--f-body);font-size:12px;font-style:italic;letter-spacing:.08em}
+.mapsvg .clu{cursor:pointer}
+.mapsvg .clu circle.ring{fill:none;stroke-width:2;opacity:.35}
+.mapsvg .clu:hover circle.dotm,.mapsvg .clu:focus-visible circle.dotm,.mapsvg .pin:focus-visible circle.dotm{stroke:var(--ink);stroke-width:2.5}
+.mapsvg .clu:focus,.mapsvg .pin:focus{outline:none}
+.mapsvg .tile{filter:var(--tilefx)}
+.mapsvg .halo2{fill:var(--surface);opacity:.55}
+.mapsvg .spoke{stroke:var(--ink);stroke-width:1.5}
+.mapsvg .hlr{fill:none;stroke:var(--ink);stroke-width:2.5}
+.mapsvg .sbg{fill:var(--surface);opacity:.85}
+.mapsvg .sbt{fill:var(--ink);font-family:var(--f-mono);font-size:10px}
+.mapsvg .dotm{stroke:var(--surface);stroke-width:2}
+.mapsvg .apx{fill:var(--surface);stroke:var(--muted);stroke-width:2;stroke-dasharray:3 2}
+.mapsvg .apxt{fill:var(--muted)}
+.mapsvg .plab{fill:var(--ink);font-family:var(--f-mono);font-size:10.5px;paint-order:stroke;stroke:var(--sunk);stroke-width:3px}
+.mapsvg .clab{fill:var(--ink);font-family:var(--f-display);font-size:13px;font-weight:600;paint-order:stroke;stroke:var(--sunk);stroke-width:3px}
+.drow.hl{border-color:var(--accent);background:var(--accent-soft)}
+.links{font-size:12.5px}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.mapcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;min-width:0;align-content:start}
+.mapcard header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.mapsvg{width:100%;height:auto;background:var(--sunk);border-radius:8px;display:block}
+.mapsvg .grat{stroke:var(--line);stroke-width:1}
+.mapsvg .pin{cursor:pointer}
+.mapsvg .pin circle.halo{fill:transparent}
+.mapsvg .pin:hover circle.dotm,.mapsvg .pin:focus-visible circle.dotm,.mapsvg .pin.sel circle.dotm{stroke:var(--ink);stroke-width:2.5}
+.mapsvg .pin:focus{outline:none}
+.mapsvg .p-strong{fill:var(--good)} .mapsvg .p-good{fill:var(--accent)} .mapsvg .p-fair{fill:var(--warn)} .mapsvg .p-pass{fill:var(--bad)}
+.mapsvg .cnt{fill:var(--surface);font-family:var(--f-mono);font-size:11px;font-weight:600}
+.mapsvg .dl{fill:var(--ink);font-family:var(--f-body);font-size:11.5px;font-weight:600}
+.mapsvg .dla{fill:var(--muted);font-family:var(--f-body);font-size:10.5px}
+.mapsvg .empty-d{fill:var(--surface);stroke:var(--muted);stroke-width:1.5}
+.mapsvg .lm{fill:var(--muted)}
+.mapsvg .lml{fill:var(--muted);font-family:var(--f-body);font-size:10px;font-style:italic}
+.mapsvg .sbar{stroke:var(--ink);stroke-width:2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-inline-end:5px}
+.dlist{display:grid;gap:6px}
+.drow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.drow .mini{font-family:var(--f-display);font-weight:700;font-size:13px;padding:2px 6px;border-radius:6px}
+.drow .btn{padding:5px 9px;font-size:12.5px}
+/* wizard + conclusion */
+.wiz{max-width:720px;gap:12px}
+.wtop{display:grid;gap:6px}
+.wbar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}.wbar i{display:block;height:100%;background:var(--accent)}
+.wgrid{display:grid;gap:16px;margin-top:4px}
+.wf{display:grid;gap:6px}
+.wf label,.lbl2{font-weight:600;font-size:14px}
+.wf input.num{font:inherit;font-family:var(--f-mono);font-size:18px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);color:var(--ink);max-width:280px;width:100%}
+.wseg{flex-wrap:wrap}.wseg button{padding:9px 14px;font-size:14px}
+.chipset{display:flex;flex-wrap:wrap;gap:8px}.chk{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--sunk);font-size:14px;cursor:pointer}
+.werr{color:var(--bad);margin:0;min-height:1.2em;font-size:13.5px}
+.wnav{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.live{gap:10px}
+.concl{gap:12px;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.cl-head{display:flex;gap:12px;justify-content:space-between;align-items:start;flex-wrap:wrap}.cl-head>div{display:grid;gap:6px;max-width:70ch}
+.cl-head h2{font-size:22px}
+.cl-picks{margin:0;padding-inline-start:20px;display:grid;gap:10px;font-size:14px}
+.linkish{all:unset;cursor:pointer;color:var(--accent)}.linkish:hover{text-decoration:underline}.linkish:focus-visible{outline:2px solid var(--accent)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:12px;padding:1px 6px;border-radius:6px}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:slide .22s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">First home · بيتك الأول</div>
+    <h1>Saudi First Home Finder</h1>
+    <p>Answer six quick questions about your income and savings. Every listing below is then priced, financed and scored for you, with a plain conclusion at the top. Your answers stay in this browser.</p>
+  </header>
+
+  <section class="sec wiz" id="wiz" aria-label="Your profile" hidden></section>
+  <section class="sec concl" id="concl" aria-label="Your conclusion" hidden></section>
+  <section class="sec live" id="livePanel" aria-label="Live search" hidden>
+    <div class="cl-head"><div><span class="eyebrow">Live search · بحث مباشر</span><h2>Search current listings for you</h2>
+      <p style="margin:0" id="liveIntro">Claude searches Aqar, Bayut, Property Finder and Wasalt right now for apartments in your cities, price range and bedroom count, then every result is scored against your profile. It takes one to three minutes. Only your cities, price range, bedrooms and goal are sent; your salary and savings stay in this browser.</p></div>
+      <button class="btn" id="liveGo">Search now</button></div>
+    <p class="note" id="liveStatus" role="status" style="margin:0"></p>
+  </section>
+
+  <section class="strip" id="strip" aria-label="Summary" hidden>
+    <div><span class="eyebrow">Listings updated</span><span class="big">25 Oct 2026</span><span class="muted" style="font-size:12.5px"><span id="nDeals">20</span> listings · <span id="nShown"></span> match your profile</span></div>
+    <div><span class="eyebrow">Your max price</span><span class="big num" id="maxPrice"></span><span class="muted" style="font-size:12.5px" id="maxPriceNote"></span></div>
+    <div><span class="eyebrow" id="instLbl">Max installment</span><span class="big num" id="maxInst"></span><span class="muted" style="font-size:12.5px" id="maxLoan"></span></div>
+    <div><span class="eyebrow">Top 3 picks</span><div class="picks" id="picks"></div></div>
+  </section>
+
+  
+
+  <section class="sec" id="notes" aria-label="Market notes">
+    <h2>Market notes, 25 Oct 2026</h2>
+    <ul class="qs">
+      <li><b>Rates went up.</b> SAMA raised its repo rate to 4.50% on 16 Sep 2026 after a US Fed hike. Mortgages here are modelled at 5.25% (6.25% stress). The next Fed decision is 28 Oct 2026.</li>
+      <li><b>Riyadh rents are frozen</b> to about Sep 2030 within the city's urban boundary. A unit's rent is capped at its last Ejar contract, so a Riyadh rental is fixed income. REGA said on 2 Oct 2026 the freeze is not being extended to other cities.</li>
+      <li><b>Check bank financing first.</b> Several new Al Yaqoot (Jeddah) projects advertise "cash only".</li>
+      <li><b>Some listings may be gone.</b> Three Al Rimal listings (R1, R3, R5) did not appear on Aqar's live pages on 25 Oct 2026; their pins are approximate. N1 in Al Arid dates from Aug 2024.</li>
+    </ul>
+  </section>
+
+  <section class="controls" id="controls" aria-label="Filters and assumptions" hidden>
+    <div class="row">
+      <div class="ctl"><span class="lbl">View</span>
+        <div class="seg" id="fView"><button data-v="list" aria-pressed="true">List</button><button data-v="map" aria-pressed="false">Map</button></div></div>
+      <div class="ctl"><label for="fCity">City</label>
+        <select id="fCity"><option value="">All cities</option><option>Riyadh</option><option>Jeddah</option><option>Al Khobar</option></select></div>
+      <div class="ctl"><span class="lbl">Strategy</span>
+        <div class="seg" id="fStrat"><button data-v="" aria-pressed="true">Any</button><button data-v="A" aria-pressed="false">Rent out</button><button data-v="B" aria-pressed="false">Live in</button></div></div>
+      <div class="ctl"><label for="fType">Type</label>
+        <select id="fType"><option value="">All types</option><option value="apartment">Apartment</option><option value="roof">Roof / penthouse</option></select></div>
+      <div class="ctl" style="min-width:180px"><label for="fBudget">Max price <output id="oBudget"></output></label>
+        <input type="range" id="fBudget" min="250000" max="900000" step="10000" value="900000"></div>
+      <div class="ctl" style="min-width:150px"><label for="fScore">Min score <output id="oScore"></output></label>
+        <input type="range" id="fScore" min="0" max="80" step="5" value="0"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="row">
+      <div class="ctl"><span class="lbl">Broker commission</span>
+        <div class="seg" id="aComm"><button data-v="1" aria-pressed="true">2.5% + VAT</button><button data-v="0" aria-pressed="false">Buy direct (0%)</button></div></div>
+      <div class="ctl"><span class="lbl">Mortgage rate (APR)</span>
+        <div class="seg" id="aRate"><button data-v="0.0525" aria-pressed="true">5.25% base</button><button data-v="0.0625" aria-pressed="false">6.25% stress</button></div></div>
+      <div class="ctl"><span class="lbl">Term</span>
+        <div class="seg" id="aTerm"><button data-v="25" aria-pressed="true">25 yrs</button><button data-v="20" aria-pressed="false">20 yrs</button></div></div>
+      <p class="note" style="margin:0;flex:1;min-width:220px">Rate is an ESTIMATE: offers published earlier in 2026 ran about 4.1%–5.6% APR, before the September hike. Get a written offer from your salary bank before relying on these numbers.</p>
+    </div>
+  </section>
+
+  <section aria-label="Deals" id="dealsSec" hidden>
+    <div class="grid" id="grid"></div>
+    <div id="mapView" hidden>
+      <div class="mapbox">
+        <div class="maptools">
+          <div class="crumbs" id="mapCrumb"></div>
+          <div class="seg" id="mapJump"><button data-v="all">All</button><button data-v="Riyadh">Riyadh</button><button data-v="Jeddah">Jeddah</button><button data-v="Al Khobar">Khobar</button></div>
+          <div class="seg"><button id="zIn" aria-label="Zoom in">+</button><button id="zOut" aria-label="Zoom out">−</button></div>
+        </div>
+        <svg id="mapSvg" class="mapsvg" viewBox="0 0 760 460" role="img" aria-label="Map of shortlisted deals in Saudi Arabia"></svg>
+        <div class="legend"><span><i style="background:var(--good)"></i>Strong</span><span><i style="background:var(--accent)"></i>Good</span><span><i style="background:var(--warn)"></i>Fair</span><span><i style="background:var(--bad)"></i>Pass</span><span><i style="background:var(--surface);border:2px solid var(--muted)"></i>Approximate</span><span>Number in pin = score · bubble = group, tap to zoom · drag to pan</span><span style="margin-inline-start:auto">Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</span></div>
+      </div>
+      <div class="sec" style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline"><h3 id="inViewTitle">Deals in view</h3><span class="note" id="inViewNote"></span></div><div class="dlist" id="inView"></div></div>
+      <p class="note" style="margin:8px 0 0">Street map saved on 25 Oct 2026; detail covers the blocks around each listing and the three city areas. Pins come from each listing's own map position, set by the advertiser, so check it against the title deed.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-label="Area comparison">
+    <h2>Area comparison</h2>
+    <p class="note" style="margin:0">Apartment-level transacted prices (SREM) could not be retrieved this scan. "Asking" is the median of listings I sampled on 22 Oct 2026. "MOJ median" is the Ministry of Justice transaction median from Raghdan, which mixes land and buildings, so it runs well below apartment prices and is shown for direction only.</p>
+    <div class="tbl-wrap"><table id="areaTbl"></table></div>
+    <p class="note" style="margin:0">Est. gross yield = 3-bed rent ÷ (asking price/m² × 120 m²). Rents are asking rents from Aqar/Bayut, 22 Oct 2026. "Raghdan tag" is the growth figure Raghdan prints on its district card.</p>
+  </section>
+
+  <section class="sec" aria-label="Rules check">
+    <h2>Rules and market check, this scan</h2>
+    <ul class="qs" id="rules"></ul>
+  </section>
+
+  <section class="sec" aria-label="Sources">
+    <h2>Sources</h2>
+    <ol class="src" id="sources"></ol>
+  </section>
+
+  <p class="foot">Not financial, legal or tax advice, and not an offer to sell. This page is not affiliated with Aqar, Bayut, Aqar City, REGA, SAMA or any bank. Listings are summaries of public adverts as of 25 Oct 2026 and may have been withdrawn or repriced; contact the advertiser through the original listing. Rents marked ESTIMATE are inferred from nearby asking rents. Your answers are saved only in this browser. A live search sends only your cities, price range, bedrooms and goal to this site\'s server and to Anthropic\'s API to run the search; your salary and savings are never sent. Live results are found by AI and can be wrong or out of date. Before paying anything, get a written offer from your bank, use a REGA-licensed broker, check the electronic title deed and visit the property.</p>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet-in" id="sheetIn"></div></aside>
+
+<script id="engine">
+const PROFILE={saudi:true,firstHome:true,salary:0,oblig:0,cash:0,employ:"private",goal:"either",livesIn:"Riyadh",cities:["Riyadh","Jeddah","Al Khobar"],minBeds:0,comfort:"std",bankFees:5000,commRate:0.025*1.15,ltv:0.90,rettExempt:true};
+function derive(){const P=PROFILE;P.ltv=(P.saudi&&P.firstHome)?0.90:0.70;P.rettExempt=P.saudi&&P.firstHome;
+  P.legalMax=P.employ==="retired"?0.45:(P.salary<=15000?0.55:0.65);
+  P.plan=P.comfort==="cons"?0.33:P.comfort==="max"?P.legalMax:Math.min(0.45,P.legalMax);
+  P.maxInst=Math.max(0,P.salary*P.plan-P.oblig);P.legalInst=Math.max(0,P.salary*P.legalMax-P.oblig);return P}
+const SRC={
+ s1:["Aqar — apartments for sale, Al Rimal (listing page)","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A8%D9%8A%D8%B9/%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6/%D8%B4%D8%B1%D9%82-%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6/%D8%AD%D9%8A-%D8%A7%D9%84%D8%B1%D9%85%D8%A7%D9%84","read 22 Oct 2026"],
+ s2:["Aqar — Al Rimal ground-floor unit, listing 6437875","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A8%D9%8A%D8%B9/%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6/%D8%B4%D8%B1%D9%82-%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6/%D8%AD%D9%8A-%D8%A7%D9%84%D8%B1%D9%85%D8%A7%D9%84/%D8%AD%D9%8A-%D8%A7%D9%84%D8%B1%D9%85%D8%A7%D9%84-%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6-%D9%85%D9%86%D8%B7%D9%82%D8%A9-%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6-6437875","read 22 Oct 2026"],
+ s3:["Aqar — broker page with Al Rimal 83 m² sale + rent asks","https://sa.aqar.fm/user/5343305","read 22 Oct 2026"],
+ s4:["Bayut — Al Arid developer units, ref 87561130","https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87561130.html","date posted not shown"],
+ s5:["Bayut — Al Arid 89 m², ref 88055840","https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-88055840.html","posted 29 Jul 2026"],
+ s6:["Aqar — Al Yaqoot apartments for sale (listing page)","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A8%D9%8A%D8%B9/%D8%AC%D8%AF%D8%A9/%D8%B4%D9%85%D8%A7%D9%84-%D8%AC%D8%AF%D8%A9/%D8%AD%D9%8A-%D8%A7%D9%84%D9%8A%D8%A7%D9%82%D9%88%D8%AA","read 22 Oct 2026"],
+ s7:["Bayut — Al Rakah Al Janubiyah 162 m², ref 87623086","https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87623086.html","date posted not shown"],
+ s8:["Bayut — Al Rakah Al Janubiyah 147 m², ref 87995293","https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87995293.html","posted 21 May 2026"],
+ s12:["Aqar — North Rimal 3-bed with roof, listing 6934356","https://sa.aqar.fm/6934356","added 24 Oct 2026"],
+ s13:["Aqar — North Rimal ground-floor 2-bed, listing 6902972","https://sa.aqar.fm/6902972","added 3 Oct 2026"],
+ s14:["Aqar — Rafah 50, Al Rimal, listing 6783222","https://sa.aqar.fm/6783222","added 21 Jul 2026, checked 25 Oct 2026"],
+ s10:["Aqar — Qurtubah 2-bed, listing 6787461","https://sa.aqar.fm/6787461","added 23 Jul 2026, checked 23 Oct 2026"],
+ s11:["Aqar — Nasamat 2, Al Yaqoot, listing 6932198","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A8%D9%8A%D8%B9/%D8%AC%D8%AF%D8%A9/%D8%B4%D9%85%D8%A7%D9%84-%D8%AC%D8%AF%D8%A9/%D8%AD%D9%8A-%D8%A7%D9%84%D9%8A%D8%A7%D9%82%D9%88%D8%AA","seen 23 Oct 2026"],
+ g15:["SAMA raises repo 25 bp to 4.50% (Al Yaum)","https://www.alyaum.com/articles/6682950/%D8%A7%D9%84%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF/%D9%85%D8%A7%D9%84-%D9%88%D8%A3%D8%B9%D9%85%D8%A7%D9%84/%D8%A7%D9%84%D8%A8%D9%86%D9%83-%D8%A7%D9%84%D9%85%D8%B1%D9%83%D8%B2%D9%8A-%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A-%D9%8A%D8%B1%D9%81%D8%B9-%D9%85%D8%B9%D8%AF%D9%84-%D8%A7%D9%84%D8%B1%D9%8A%D8%A8%D9%88-25-%D9%86%D9%82%D8%B7%D8%A9-%D8%A3%D8%B3%D8%A7%D8%B3-%D8%A5%D9%84%D9%89-450","16 Sep 2026"],
+ g16:["Fed raises rates to 3.75%–4.00% (Admiral Markets)","https://admiralmarkets.com/analytics/traders-blog/fed-raised-interest-rates","16 Sep 2026"],
+ g17:["REGA: no current study to extend the rent freeze to other cities (Al Eqtisadiah)","https://www.aleqt.com/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1%D8%A7%D8%AA/%D9%87%D9%8A%D8%A6%D8%A9-%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1-%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9-%D9%84%D8%A7-%D9%88%D8%AC%D9%88%D8%AF-%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A9-%D9%84%D8%AA%D8%AB%D8%A8%D9%8A%D8%AA-%D8%A7%D9%84%D8%A5%D9%8A%D8%AC%D8%A7%D8%B1%D8%A7%D8%AA-%D9%81%D9%8A-%D8%A8%D9%82%D9%8A%D8%A9-%D8%A7%D9%84%D9%85%D8%AF%D9%86-%D8%AD%D8%A7%D9%84%D9%8A%D8%A7-1784","2 Oct 2026"],
+ g18:["FOMC October 2026 schedule (decision 28 Oct)","https://fedratecalc.com/fomc-meeting-schedule/october-2026/","checked 23 Oct 2026"],
+ s9:["Aqar City — Al Khobar apartments for sale (Al Hamra listings 30459, 30927)","https://www.aqarcity.net/properties/citycat/13/sale/31","read 22 Oct 2026"],
+ r1:["Aqar — Al Yaqoot apartments for rent","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A5%D9%8A%D8%AC%D8%A7%D8%B1/%D8%AC%D8%AF%D8%A9/%D8%B4%D9%85%D8%A7%D9%84-%D8%AC%D8%AF%D8%A9/%D8%AD%D9%8A-%D8%A7%D9%84%D9%8A%D8%A7%D9%82%D9%88%D8%AA","read 22 Oct 2026"],
+ r2:["Aqar — Al Aqrabiyah apartments for rent","https://sa.aqar.fm/%D8%B4%D9%82%D9%82-%D9%84%D9%84%D8%A5%D9%8A%D8%AC%D8%A7%D8%B1/%D8%A7%D9%84%D8%AE%D8%A8%D8%B1/%D8%AD%D9%8A-%D8%A7%D9%84%D8%B9%D9%82%D8%B1%D8%A8%D9%8A%D8%A9","read 22 Oct 2026"],
+ r3:["Aqar — Al Rimal rental, 45,000/yr (listing 6791670)","https://sa.aqar.fm/شقق-للإيجار/الرياض/شرق-الرياض/حي-الرمال/شارع-العام-حي-الرمال-مدينة-الرياض-منطقة-الرياض-6791670","read 22 Oct 2026"],
+ r4:["Bayut — Al Rimal 3-bed rental, 33,600/yr (ref 88053792)","https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-88053792.html","read 22 Oct 2026"],
+ a1:["Raghdan market index (MOJ transactions) — Al Yaqoot, Jeddah","https://raghdan.sa/ar/market/%D8%AC%D8%AF%D8%A9/%D8%A7%D9%84%D9%8A%D8%A7%D9%82%D9%88%D8%AA/","data to 30 Jun 2026"],
+ a2:["Raghdan market index — Riyadh districts","https://raghdan.sa/en/market/%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6/","data to Q2 2026"],
+ a3:["Raghdan — Al Zumorrodah, Jeddah","https://raghdan.sa/ar/market/%D8%AC%D8%AF%D8%A9/%D8%A7%D9%84%D8%B2%D9%85%D8%B1%D8%AF/","2026"],
+ a4:["Raghdan — Obhur Al Shamaliyah, Jeddah","https://raghdan.sa/ar/market/%D8%AC%D8%AF%D8%A9/%D8%A3%D8%A8%D8%AD%D8%B1%20%D8%A7%D9%84%D8%B4%D9%85%D8%A7%D9%84%D9%8A%D8%A9/","2026"],
+ a5:["Raghdan — Al Aqrabiyah, Al Khobar","https://raghdan.sa/ar/market/%D8%A7%D9%84%D8%AE%D8%A8%D8%B1/%D8%A7%D9%84%D8%B9%D9%82%D8%B1%D8%A8%D9%8A%D8%A9/","2026"],
+ a6:["Raghdan — Al Rakah Al Janubiyah, Al Khobar","https://raghdan.sa/ar/market/%D8%A7%D9%84%D8%AE%D8%A8%D8%B1/%D8%A7%D9%84%D8%B1%D8%A7%D9%83%D8%A9%20%D8%A7%D9%84%D8%AC%D9%86%D9%88%D8%A8%D9%8A%D8%A9/","data to Q2 2026"],
+ g1:["GASTAT Real Estate Price Index Q2 2026 (via Okaz)","https://www.okaz.com.sa/economy/na/2257730","published 20 Jul 2026"],
+ g2:["GASTAT Q1 2026 regional figures (via Annahar)","https://en.annahar.com/fr/302069/property-prices-in-saudi-arabia-continue-to-decline-for-the-second-consecutive-quarter","published 20 Apr 2026"],
+ g3:["Riyadh rent freeze, one year on (Asharq Al-Awsat)","https://english.aawsat.com/business/5327399-year-after-riyadh-halted-rent-hikes-market-tests-new-balance","Sep 2026"],
+ g4:["Rent freeze terms (Gulfbase / SPA)","https://www.gulfbase.com/news/saudi-arabia-freezes-rents-in-riyadh-for-5-years/211963","26 Sep 2025"],
+ g5:["ZATCA on RETT first-home support (Ajel)","https://english.ajel.sa/news/2jft3qgt9","2 Aug 2026"],
+ g6:["SAMA debt-burden brackets (Ajel)","https://ajel.sa/economy/7hd4sm","older guidance, still cited"],
+ g7:["Banks cut DBR to 55% for salaries under 15k (Al Eqtisadiah)","https://www.aleqt.com/2025/09/27/article_2767119.html","27 Sep 2025"],
+ g8:["Al Rajhi mortgage campaign, APR from 5.58%","https://www.alrajhibank.com.sa/Personal/Offers/CardsOffers/Others/Mortgage-loans","Apr–Jul 2026 offer"],
+ g9:["Mortgage rates 4.1%–5% for residents (Arab News)","https://www.arabnews.pk/node/2628525","7 Jan 2026"],
+ g10:["SAMA repo cut to 4.25%","https://www.sama.gov.sa/en-US/MediaCenter/News/Pages/news-1124.aspx","10 Dec 2025"],
+ g11:["New supply pipeline 2026–27 (Cavendish Maxwell via TradeArabia)","https://www.tradearabia.com/News/331710/","2025 report"],
+ g12:["SAMA 90% LTV for citizens' first home (Amlak)","https://amlak.net.sa/en/19068/","standing rule"],
+ g13:["Infath: 46 auctions, 541 properties, 1–15 Aug 2026 (Ajel)","https://english.ajel.sa/business/vd3yhfa7b","Aug 2026"],
+ g14:["New mortgages Aug 2026 (Argaam)","https://www.argaam.com/en/article/articledetail/id/1940627","Sep 2026"]
+};
+const AREAS={
+ rimal:{name:"Al Rimal",ar:"الرمال",city:"Riyadh",zone:"Riyadh East",ask:5034,askN:21,moj:3800,mojNote:"MOJ all-residential median; Raghdan tags +20.9% growth",rent2:38000,rent3:45000,freeze:true,
+   trend:{label:"GASTAT, Riyadh region YoY (all property)",pts:[["Q1 2026",-4.4],["Q2 2026",4.2]],unit:"%"},
+   rentTrend:"Riyadh residential rents +4.5% YoY in Aug 2026, slowest in 3+ years; frozen for existing and previously-leased units to ~Sep 2030.",tx:"14,905 MOJ deals 2020–Q2 2026 (all types)",liq:"High listing volume (521 apartments on Aqar). Large 2026–27 supply pipeline in Riyadh (57k units).",src:["a2","g1","g2","g3"]},
+ arid:{name:"Al Arid",ar:"العارض",city:"Riyadh",zone:"Riyadh North",ask:8918,askN:4,moj:null,mojNote:"Not retrieved this scan",rent2:null,rent3:null,freeze:true,
+   trend:{label:"GASTAT, Riyadh region YoY (all property)",pts:[["Q1 2026",-4.4],["Q2 2026",4.2]],unit:"%"},
+   rentTrend:"Frozen to ~Sep 2030. No verified Al Arid rent sample this scan.",tx:"Not retrieved",liq:"Northern districts trade at a premium; most apartments listed at 860k+.",src:["a2","g1","g3"]},
+ yaqoot:{name:"Al Yaqoot",ar:"الياقوت",city:"Jeddah",zone:"Jeddah North",ask:3543,askN:17,moj:2600,mojNote:"MOJ median, last 12 months, 919 deals (mostly land, median deal 750 m²)",rent2:24000,rent3:25000,freeze:false,
+   trend:{label:"MOJ median SAR/m², Al Yaqoot (Raghdan)",pts:[["Jul 24–Jun 25",2250],["Jul 25–Jun 26",2600],["Jun 2026",3015]],unit:""},
+   rentTrend:"No freeze in Jeddah. Asking rents: 2-bed 24k, 3-bed 22k–27k, 4-bed 24k–34k per year.",tx:"919 deals in 12 months to Jun 2026, top 6% of Jeddah for liquidity",liq:"Very liquid but crowded: many near-identical new projects (Marova, Mahaba, Oasis). Jeddah pipeline 36k units 2026–27.",src:["a1","r1","g1","g11"]},
+ qurtubah:{name:"Qurtubah",ar:"قرطبة",city:"Riyadh",zone:"Riyadh East",ask:5034,askN:21,moj:null,mojNote:"No Qurtubah apartment median retrieved; Al Rimal asking median used as the East Riyadh benchmark",rent2:38000,rent3:45000,freeze:true,
+   trend:{label:"GASTAT, Riyadh region YoY (all property)",pts:[["Q1 2026",-4.4],["Q2 2026",4.2]],unit:"%"},
+   rentTrend:"Frozen to ~Sep 2030 within Riyadh's urban boundary.",tx:"5,020 MOJ deals (all types), avg deal 1.18M (Mushraq)",liq:"Older, established district; 219 apartments listed on Aqar.",src:["a2","g3"]},
+ khobar:{name:"Al Khobar (Al Rakah S. / Al Hamra)",ar:"الخبر",city:"Al Khobar",zone:"Al Khobar",ask:4065,askN:12,moj:2820,mojNote:"MOJ average, Khobar residential districts (Raghdan); Al Rakah S. 2,552, Al Hamra 3,630",rent2:24000,rent3:28000,freeze:false,
+   trend:{label:"GASTAT, Eastern Province YoY",pts:[["Q4 2025",0.4],["Q1 2026",6.9]],unit:"%"},
+   rentTrend:"No freeze. Al Aqrabiyah asks: 2-bed 16k–28k, 3-bed 26.5k–31.5k per year (used as proxy).",tx:"Al Rakah S. 378 MOJ deals 2020–Q2 2026",liq:"Thinner market than Riyadh/Jeddah; new Shubaili/Al Hamra projects supply most listings.",src:["a5","a6","r2","g2"]}
+};
+// risk 0-10 and growth 0-15 are judgement scores, explained in each deal's notes
+const DEALS=[
+ {id:"R1",beds:3,ll:[24.866,46.818],approx:true,area:"rimal",type:"apartment",title:"Hajar 50, unit F7 — 3-bed, 1st floor",titleAr:"مشروع هاجر 50 — شقة F7",size:145,price:739000,rooms:"3 bed · majlis · 3 bath",rent:45000,rentEst:true,rentWhy:"Al Rimal 3-bed asks: 33.6k (3 yrs old), 45k, 57k (luxury). Used the middle. First lease is set freely, then frozen to 2030.",growth:9,risk:7,
+  facts:["Developer: Masakin Hajar (مساكن هاجر). Sibling units: G06 140 m² 729k, D05 132 m² 719k.","Warranties up to 25 years; 1-year comprehensive warranty.","Internal garden, kids' area, air-conditioned corridors, CCTV.","Floor 1; elevator and parking not stated in the listing."],
+  flags:["Not found on Aqar's live Al Rimal pages on 25 Oct 2026; may be withdrawn. Pin is approximate.","Elevator and private parking not confirmed in the listing.","Never leased, so you set the first Ejar rent — then it is frozen until ~2030. Price that first lease carefully.","Riyadh 2026–27 supply pipeline (57k units) could slow rent-ups and resale."],
+  qs:["Is the sale direct from Masakin Hajar with no brokerage fee?","Electronic deed per unit (صك إلكتروني) ready at handover? Completion certificate issued?","Is there an elevator and an allocated parking space for F7?","Owners' association (اتحاد الملاك) fee per year?","Will the price drop for a bank-financed first-home buyer?"],
+  verdict:"A solid live-in option if bought direct with no commission (cash needed about 79k at a 90% loan). As a rental it runs negative cash flow at today's rates.",src:["s1","r3","r4"]},
+ {id:"R6",beds:3,isNew:true,ll:[24.937185,46.790276],url:"https://sa.aqar.fm/6934356",area:"rimal",type:"apartment",title:"North Rimal — new 3-bed with roof, 132 m²",titleAr:"الرمال — 3 غرف مع سطح 132 م²",size:132,price:580000,rooms:"3 bed (2 master) · majlis · roof",rent:40000,rentEst:true,rentWhy:"Al Rimal 3-bed asks: 33.6k, 45k, 57k. Set below the middle for the far-north location near the airport. Never leased, so you set the first Ejar rent, then it is frozen to ~2030.",growth:9,risk:4,
+  facts:["Aqar ID 6934356, added 24 Oct 2026. Broker: Rakaez Al Rawaa (ركائز الروعة).","New building. Includes the roof (السطح). Price stated as negotiable.","Floor, elevator, parking and warranties not stated."],
+  flags:["Thin listing: no floor, elevator, parking or warranty details.","Far-north edge of Al Rimal, about 9 km east of King Khalid Airport. Check aircraft noise and commute on a visit.","Sold through a broker, so budget for 2.5% + VAT commission."],
+  qs:["Which floor? Is there an elevator and an allocated parking space?","Is the roof on the deed (مساحة السطح في الصك)?","Completion certificate and electronic deed per unit?","Developer warranties and hidden-defects insurance?","Lowest price for a bank-financed first-home buyer?"],
+  verdict:"Cheapest per m² in Riyadh this scan and it needs about 80k cash with commission at a 90% loan. Promising for living in, but the listing is thin, so its score carries a risk penalty until you have the floor, elevator and deed details.",src:["s12"]},
+ {id:"R7",beds:2,isNew:true,noComm:true,ll:[24.937713,46.790091],url:"https://sa.aqar.fm/6902972",area:"rimal",type:"apartment",title:"North Rimal — ground-floor 2-bed, 116 m², no commission",titleAr:"الرمال — دور أرضي 116 م² بدون سعي",size:116,price:580000,rooms:"2 bed · majlis · dining · 3 bath",rent:40000,rentEst:true,rentWhy:"Al Rimal 2-bed asks 37k–39k; set slightly higher for the ground floor's 188 m² total with private areas.",growth:9,risk:7,
+  facts:["Aqar ID 6902972, added 3 Oct 2026, cut from 600k. Advertiser: Sotwa Real Estate (سطوة العقارية).","Sold with no commission (بدون سعي). 580k without an elevator, 600k with one installed; you would be on the ground floor.","188 m² including private areas. Reserved parking with a barrier. Warranties up to 25 years, 10-year structural insurance.","Deed note: unit's land share 67.26 m², common areas 7.16 m²."],
+  flags:["Two bedrooms only (the listing's '5 rooms' counts the majlis and dining).","Same far-north Rimal location as R6, near the airport.","Ask whether 580k (no elevator) affects resale or the owners' association for upper floors."],
+  qs:["Confirm 580k is the full price for the ground-floor unit with no commission.","What exactly do the 188 m² include (yard, roof, parking)?","Completion certificate and electronic deed?","Hidden-defects insurer and policy number?"],
+  verdict:"No commission brings the cash needed down to about 63k at a 90% loan, the easiest Riyadh purchase on the board. Good live-in candidate if two bedrooms is enough.",src:["s13"]},
+ {id:"R8",beds:2,isNew:true,ll:[24.851625,46.822375],url:"https://sa.aqar.fm/6783222",area:"rimal",type:"apartment",title:"Rafah 50 — 135 m², ground floor, cut to 599k",titleAr:"مشروع رفاه 50 — 135 م²",size:135,price:599000,rooms:"2–3 bed · majlis · 3 bath",rent:45000,rentEst:true,rentWhy:"Al Rimal 3-bed band; the specs list 3 bedrooms, the text 2 plus majlis.",growth:9,risk:6,
+  facts:["Aqar ID 6783222, added 21 Jul 2026, price cut 11% from 675,000. Advertiser: Maskan Al Yasmin (مسكن الياسمين).","Elevator, private parking, car entrance, smart home, CCTV, private yards or roofs on some units.","Project units 123–260 m²; text quotes 639k–736k, the card 599k."],
+  flags:["Bedroom count conflicts: specs say 3, description says 2 plus majlis.","Card price (599k) is below the project's quoted starting price (639k). Confirm which applies.","Three months on the market with an 11% cut suggests room to negotiate further."],
+  qs:["Is 599k the price of this exact 135 m² unit?","Two or three bedrooms?","Direct from the developer, or is there a commission?","Completion certificate, deed and warranties?"],
+  verdict:"Central Rimal location with an elevator and parking at 4,437 SAR/m². Worth a call; if the 599k price is real, it beats Hajar 50 by 140k.",src:["s14"]},
+ {id:"R3",beds:3,ll:[24.866,46.818],approx:true,area:"rimal",type:"apartment",title:"Dar Al Rayan 29 — 4-room, 147 m²",titleAr:"مشروع دار الريان 29",size:147,price:800000,rooms:"4 rooms · 3 bath",rent:45000,rentEst:true,rentWhy:"Same Al Rimal 3-bed band; 4-room layout may add a little.",growth:9,risk:7,
+  facts:["Written warranties: 10 yrs structure, 10 yrs elevator, 15 yrs thermal pipes, 20 yrs electrical panels.","Private parking for each unit; some units have private roof or yard.","Sibling unit: 118 m² at 750k."],
+  flags:["Not found on Aqar's live Al Rimal pages on 25 Oct 2026; may be withdrawn. Pin is approximate.","Needs about 85k cash even buying direct (a 10% deposit alone is 80k).","Per m² it is below the Rimal asking median, but the absolute price is the problem."],
+  qs:["Any payment plan or developer-subsidised deposit?","Which units carry the private roof/yard, and at what premium?"],
+  verdict:"Good build spec and warranties; it needs about 85k cash even with no commission.",src:["s1"]},
+ {id:"R4",beds:3,ll:[24.862555,46.812485],url:"https://sa.aqar.fm/6437875",area:"rimal",type:"apartment",title:"Ground floor with yard, tenanted at 50k",titleAr:"شقة أرضية بحوش — مؤجرة",size:118,price:845000,rooms:"3 bed · 3 bath · yard (150 m² total)",rent:50000,rentEst:false,rentWhy:"Listing states it is leased at 50,000/yr with the contract ending in October.",growth:9,risk:6,
+  facts:["New building, smart entry, own electricity meter.","Ground floor with a large private yard (حوش).","Existing lease 50,000/yr per the listing."],
+  flags:["Price raised from 790,000 to 845,000 (seen 25 Oct 2026).","Under the Riyadh rules a sitting tenant can renew; you could only move in under the personal-use exception.","Listing ID is from 2025 — may be stale or already sold.","50k is at the top of the Rimal band; confirm it on Ejar before paying for it."],
+  qs:["Show the Ejar contract: amount, start, end, renewal status.","Has the tenant been given notice? Do they intend to renew?","Why sell a leased new unit now?"],
+  verdict:"The 50k Ejar record is the asset here (it becomes the frozen cap), but at 845k it needs over 100k cash and the tenant has renewal rights.",src:["s2"]},
+ {id:"R5",beds:2,ll:[24.866,46.818],approx:true,area:"rimal",type:"apartment",title:"Compact 83 m² unit",titleAr:"شقة 83 م²",size:83,price:650000,rooms:"3 rooms",rent:37000,rentEst:true,rentWhy:"The same broker asks 37,000/yr for an 83 m² unit on the same street.",growth:9,risk:6,
+  facts:["Same broker lists an 83 m² rental at 37k on Abdullah bin Jasir St.","Details beyond size and price not published."],
+  flags:["Not found on Aqar's live Al Rimal pages on 25 Oct 2026; may be withdrawn. Pin is approximate.","Highest price per m² in the Rimal sample (about 27% above median).","Very little detail in the listing."],
+  qs:["Floor, age, parking and elevator?","Is the 37k rental the same building?"],
+  verdict:"Overpriced per m² for the area. Pass unless the price comes down sharply.",src:["s3"]},
+ {id:"N1",beds:3,ll:[24.891100631060343,46.614011802753836],url:"https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87561130.html",area:"arid",type:"apartment",title:"Developer block, 154 m² 3-bed at 5,800/m²",titleAr:"شقق العارض — 154 م²",size:154,price:860000,rooms:"3 bed · 3 bath",rent:55000,rentEst:true,rentWhy:"No Al Arid rent sample retrieved. Set above Al Rimal's 144 m² luxury ask (57k) less a size/finish haircut. Low confidence.",growth:12,risk:6,
+  facts:["Blocks A and B; units 154–257 m² at 5,800/m².","Listing shows 1 bathroom in the header and 3 in the text."],
+  flags:["Listing dated 2 Aug 2024 and its details show 1,000,000 SAR and 141 m² against the 860k headline. Probably stale.","Bathroom count inconsistent between header and text.","Needs about 120k cash with commission."],
+  qs:["Is this still available, and at 5,800/m²?","Completion certificate and deed per unit?"],
+  verdict:"Cheapest per m² in North Riyadh I found, but it needs about 115k cash and the listing looks stale.",src:["s4"]},
+ {id:"N2",beds:2,ll:[24.86359914397969,46.63382502591512],url:"https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-88055840.html",area:"arid",type:"apartment",title:"2-bed, 89 m², first floor",titleAr:"شقة غرفتين — 89 م²",size:89,price:880000,rooms:"2 bed · 1 bath",rent:40000,rentEst:true,rentWhy:"No Al Arid sample; set slightly above Al Rimal 2-bed asks (37k–39k). Low confidence.",growth:12,risk:6,
+  facts:["Posted 29 Jul 2026. Plan 3224, Khaybar St.","Own electricity meter."],
+  flags:["About 11% above the Al Arid asking median and nearly 10,000 SAR/m².","Needs about 118k cash with commission."],
+  qs:["Why the premium over the developer units nearby at 5,800/m²?"],
+  verdict:"Overpriced for the area. Listed only to show where North Riyadh pricing sits.",src:["s5"]},
+ {id:"J1",beds:3,ll:[21.775771,39.070139],url:"https://sa.aqar.fm/6878761",area:"yaqoot",type:"apartment",title:"Tharawat Land — 4-room, 129 m², facing a park",titleAr:"مخطط ثروات لاند — 129 م²",size:129,price:399000,rooms:"2 bed + master · majlis · 3 bath",rent:26000,rentEst:true,rentWhy:"Al Yaqoot 4-room asks: 24k, 26k, 26k, 29k, 34k. Used the median.",growth:8,risk:5,
+  facts:["Price raised from 389,000 to 399,000 (seen 25 Oct 2026).","Opposite a park, two elevators, smart home, central gas, own tank and meter, private parking.","Warranties: 20 yrs structure, 25 yrs partitions, 5 yrs plumbing/electrical, 10 yrs hidden-defects insurance, 1 yr owners' association."],
+  flags:["Confirm the developer accepts bank financing; several Al Yaqoot projects are advertised as cash only.","Advert promises a 25% return — unsupported marketing; my estimate is about 6.7% gross.","Completion status not stated. If off-plan, require the Wafi licence number.","Oversupply: dozens of similar new units in Al Yaqoot."],
+  qs:["Ready now or under construction? Wafi licence number if off-plan.","Completion certificate and electronic deed per unit?","What is the 25% return claim based on?","Hidden-defects policy number and insurer?"],
+  verdict:"Lowest price per m² in Jeddah, under 400k. A solid rental at roughly break-even cash flow; check readiness and ignore the return claim.",src:["s6","r1","a1"]},
+ {id:"J2",beds:2,ll:[21.775396,39.074436],url:"https://sa.aqar.fm/6835852",area:"yaqoot",type:"apartment",title:"Marova — 2-bed, 80 m² (model F)",titleAr:"مشروع ماروفا — غرفتين 80 م²",size:80.38,price:267000,rooms:"2 bed · 2 bath",rent:22000,rentEst:true,rentWhy:"Al Yaqoot 2-bed asks: 24k and 24k. Cut 8% for competition from many identical new units.",growth:8,risk:6,
+  facts:["8 automatic elevators, smart entry, landscaped areas, faces the Jeddah Tower.","Warranties: 25 yrs foundations and structure, 10 yrs hidden defects, 5 yrs electrical/plumbing."],
+  flags:["Some resellers of these units advertise cash only. Buy from the developer and confirm a bank will finance it.","Several brokers list the same Marova units at 267k–287k — buy from the developer, not a reseller.","Completion status not stated; confirm Wafi licence if off-plan.","Small unit: rent upside depends on many competing new 2-beds."],
+  qs:["Direct developer price, and is there any broker fee?","Handover date and Wafi licence (if under construction)?","Owners' association fees and service charge?"],
+  verdict:"Smallest cheque, highest gross yield, slightly positive cash flow. Best pure buy-to-let here, with the oversupply risk priced in.",src:["s6","r1","a1"]},
+ {id:"J3",beds:3,ll:[21.775267,39.07409],url:"https://sa.aqar.fm/6833509",area:"yaqoot",type:"apartment",title:"Marova — 3-room, 108 m² (model C)",titleAr:"مشروع ماروفا — 108 م²",size:108.49,price:379000,rooms:"2 bed + master · majlis · 2 bath",rent:25000,rentEst:true,rentWhy:"Al Yaqoot 3-bed asks: 22k–27k. Used 25k.",growth:8,risk:6,
+  facts:["Same Marova project: elevators, parking, near the district central park.","Maid's room included."],
+  flags:["Same oversupply and completion questions as the 2-bed."],
+  qs:["Handover date and Wafi licence?","Corner or front unit premium?"],
+  verdict:"Decent per m² and under 380k, but yield is lower than the 2-bed. Fair.",src:["s6","r1","a1"]},
+ {id:"J4",beds:3,ll:[21.776341,39.071997],url:"https://sa.aqar.fm/6828882",area:"yaqoot",type:"apartment",title:"Mahaba — 3-bed rear unit, 104 m²",titleAr:"مشروع مهابة — 104 م²",size:104,price:349000,rooms:"3 bed · 3 bath",rent:25000,rentEst:true,rentWhy:"Al Yaqoot 3-bed asks: 22k–27k. Used 25k.",growth:8,risk:6,
+  facts:["Steel-frame building, two elevators, smart home, own tanks and meters, private parking.","Warranties: 20 yrs structure, 25 yrs partitions, 10 yrs hidden defects, 5 yrs MEP, 1 yr owners' association."],
+  flags:["Rear-facing unit; front units sell at a premium.","Same Al Yaqoot oversupply risk."],
+  qs:["Ready or off-plan? Wafi licence if off-plan.","Which floor? Rear units' view and light?"],
+  verdict:"Very close to J1 on value with a strong warranty package. A good rental backup if J1 falls through.",src:["s6","r1","a1"]},
+ {id:"J5",beds:4,ll:[21.775158,39.074084],url:"https://sa.aqar.fm/6840148",area:"yaqoot",type:"roof",title:"Marova — roof annex A, 181 m² with private roof",titleAr:"ماروفا — روف أمامي 181 م²",size:181.21,price:779000,rooms:"5 rooms · majlis · 4 bath · private roof",rent:35000,rentEst:true,rentWhy:"Al Yaqoot 5-room and roof-annex asks: 28k–35k. Used the top of the range for the private roof.",growth:8,risk:4,
+  facts:["Front roof unit facing the tower, private roof terrace, two master bedrooms, maid's room."],
+  flags:["Price conflict: headline 779,000 vs 749,000 in the description. Modelled at the headline 779k.","Roof units rent slowly in a crowded area; yield under 5%."],
+  qs:["Which price is real, 749k or 779k?","Is the roof area on the deed (مساحة السطح في الصك)?"],
+  verdict:"Nice unit, wrong numbers: low yield, pricier than the 2-beds, and an unexplained price conflict. Pass.",src:["s6","r1"]},
+ {id:"J6",beds:2,ll:[21.775905,39.076022],url:"https://sa.aqar.fm/6932198",area:"yaqoot",type:"apartment",cashOnly:true,isNew:true,title:"Nasamat 2 — 2-bed, 81 m² (cash only)",titleAr:"مشروع نسمات 2 — غرفتين 81 م²",size:81,price:279000,rooms:"2 bed",rent:22000,rentEst:true,rentWhy:"Same Al Yaqoot 2-bed band as J2 (24k asks, cut 8% for competition).",growth:8,risk:5,
+  facts:["New listing on Aqar (ID 6932198), seen 23 Oct 2026. Sales just opened; units 'from 279,000'.","Two automatic elevators, smart entry, cameras, sports club, hotel-style lobby.","Listing says CASH ONLY. Readiness and warranties not stated."],
+  flags:["Cash only: you would need the full 279k, so a mortgage is not possible as advertised.","Sales 'just started' suggests off-plan; ask for the Wafi licence.","Same oversupply as the rest of Al Yaqoot."],
+  qs:["Will you accept bank financing once the completion certificate is issued?","Wafi licence number and handover date?","Is 279k the price of this exact 81 m² unit or a 'from' price?"],
+  verdict:"Priced in line with Marova but cash-only, so it doesn't work with a mortgage unless the developer accepts a mortgage. Worth one phone call; skip if the answer is no.",src:["s11","r1"]},
+ {id:"Q1",beds:2,ll:[24.812087,46.743224],url:"https://sa.aqar.fm/6787461",area:"qurtubah",type:"apartment",isNew:true,title:"Qurtubah — 2-bed, 98 m², ground floor, 12 yrs old",titleAr:"قرطبة — غرفتين 98 م²",size:98,price:680000,rooms:"2 bed · 2 bath",rent:38000,rentEst:true,rentWhy:"Al Rimal 2-bed asks (37k–39k) used as an East Riyadh proxy; no Qurtubah rent sample retrieved.",growth:9,risk:6,
+  facts:["Aqar ID 6787461, added 23 Jul 2026, updated this week. Price marked final.","Elevator, private parking, owners' association, furnished, fitted kitchen.","Building about 12 years old (listing also says 'over 10')."],
+  flags:["About 13% above the Al Rimal asking median per m², for an older building.","Needs about 93k cash with a broker; three months on the market at a 'final' price.","If it was leased before, the Riyadh freeze caps rent at its last Ejar value."],
+  qs:["Was it leased before? Last Ejar rent amount?","Electronic deed, any mortgage on it?","Why non-negotiable after three months?"],
+  verdict:"Established district and a usable layout, but you pay new-build Rimal prices for a 12-year-old unit. Pass at 680k.",src:["s10"]},
+ {id:"K1",beds:3,ll:[26.35481287330417,50.207101063047155],url:"https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87623086.html",area:"khobar",type:"apartment",title:"Al Rakah Al Janubiyah — 3-bed, 162 m²",titleAr:"الراكة الجنوبية — 162 م²",size:162,price:440000,rooms:"3 bed · 2 bath",rent:28000,rentEst:true,rentWhy:"Al Aqrabiyah 3-bed asks 26.5k–31.5k used as a proxy; no Rakah apartment rent sample this scan.",growth:10,risk:4,
+  facts:["Location verified against the deed by REGA (shown on Bayut).","Street 20, Al Rakah Al Janubiyah."],
+  flags:["About 33% below the Khobar asking median with no reason given — check age, condition and deed before anything else.","Age, floor, elevator and parking not stated.","Posting date not shown; may be stale."],
+  qs:["Building age and floor? Elevator and parking?","Why is it priced this low? Any deed restriction, mortgage or dispute?","Is the unit on its own electronic deed?","Current occupancy?"],
+  verdict:"The cheapest per m² in Khobar, under 450k. Could be the deal of the scan or an old building priced fairly — the site visit decides.",src:["s7","a6","r2"]},
+ {id:"K2",beds:2,ll:[26.355065122230197,50.207671561135456],url:"https://www.bayut.sa/%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1/%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-87995293.html",area:"khobar",type:"apartment",title:"Al Rakah Al Janubiyah — 2-bed, 147 m², 2nd floor",titleAr:"الراكة الجنوبية — 147 م²",size:147,price:550000,rooms:"2 bed · 4 bath",rent:26000,rentEst:true,rentWhy:"Al Aqrabiyah 2-bed asks top out near 28k; a larger 2-bed in Rakah should sit near the top.",growth:10,risk:7,
+  facts:["Posted 21 May 2026. Deed text: unit 12, 2nd floor, building 3, plan 301/2 — verified by REGA.","Family-only building."],
+  flags:["Gross yield under 5%; rent is weak for the price."],
+  qs:["Building age, elevator, parking?","Room for negotiation after five months on the market?"],
+  verdict:"Clean paperwork. The seller has now cut 50k (to 550k), close to the 10% cut it needed; yield is still thin at 4.7%.",src:["s8","a6","r2"]},
+ {id:"K3",beds:3,ll:[26.23376908942285,50.20593086706089],url:"https://www.aqarcity.net/property/30459",area:"khobar",type:"apartment",title:"Al Hamra (Shubaili) — new 3-bed, 133 m²",titleAr:"الحمراء (الشبيلي) — 133 م²",size:133.39,price:540000,rooms:"3 bed",rent:30000,rentEst:true,rentWhy:"New 3-bed; set above the Al Aqrabiyah 3-bed band (26.5k–31.5k).",growth:11,risk:7,
+  facts:["New building near Shubaili Lake and Al Shubaili Grand Mall.","Al Hamra is outside your named Khobar list; included because it holds most new supply under 600k."],
+  flags:["Outside your target district list (adjacent to Al Aqrabiyah).","Several near-identical new projects nearby."],
+  qs:["Developer name, warranties, Wafi or completion certificate?","Elevator and parking?","Any broker fee if bought from the developer?"],
+  verdict:"New, sensibly priced. A fair rental with modest positive yield; weaker case than Jeddah.",src:["s9","r2","a6"]},
+ {id:"K4",beds:3,ll:[26.220262438634737,50.209820977483574],url:"https://www.aqarcity.net/property/30927",area:"khobar",type:"apartment",title:"Al Hamra (Shubaili) — new 3-bed, 160 m²",titleAr:"الحمراء (الشبيلي) — 160 م²",size:160.12,price:590000,rooms:"3 bed · majlis · 2 entrances",rent:32000,rentEst:true,rentWhy:"Larger new 3-bed with two entrances; set slightly above K3.",growth:11,risk:7,
+  facts:["Two entrances, separate majlis, family layout."],
+  flags:["Needs about 81k cash with commission, about 64k if bought direct."],
+  qs:["Developer and warranties?","Price for a direct, bank-financed buyer?"],
+  verdict:"Second-cheapest per m² in Khobar. Works if bought direct.",src:["s9","r2"]}
+];
+function pmt(P,r,y){const i=r/12,n=y*12;return P*i/(1-Math.pow(1+i,-n))}
+function pv(M,r,y){const i=r/12,n=y*12;return M*(1-Math.pow(1+i,-n))/i}
+function settings(o){return Object.assign({comm:true,rate:0.0525,term:25},o||{})}
+function budget(s){const P=PROFILE;const c=(s.comm?P.commRate:0);const tax=P.rettExempt?0:0.05;
+  const byCash=Math.max(0,(P.cash-P.bankFees)/((1-P.ltv)+c+tax));const loan=pv(P.maxInst,s.rate,s.term);const byIncome=loan/P.ltv;
+  const maxPrice=Math.min(byCash,byIncome);return {maxPrice,byCash,byIncome,limit:byCash<byIncome?"cash":"income",maxInst:P.maxInst,loan45:loan}}
+function analyse(d,s){
+  const A=AREAS[d.area];const ppsqm=d.price/d.size;const vsArea=(ppsqm-A.ask)/A.ask;
+  const ltv=d.cashOnly?0:PROFILE.ltv;const down=d.price*(1-ltv);const comm=(s.comm&&!d.noComm)?d.price*PROFILE.commRate:0;const rett=PROFILE.rettExempt?Math.max(0,d.price-1000000)*0.05:d.price*0.05;
+  const cash=down+comm+rett+(d.cashOnly?0:PROFILE.bankFees);const loan=d.price*ltv;const inst=loan?pmt(loan,s.rate,s.term):0;const dbr=inst/PROFILE.salary;
+  const rentM=d.rent/12;const maint=rentM*0.075;const vac=rentM/12;const cf=rentM-inst-maint-vac;
+  const gross=d.rent/d.price;const totalCost=d.price+comm+rett+PROFILE.bankFees;const netAnnual=d.rent*(1-0.075)-d.rent/12;const net=netAnnual/totalCost;
+  const ptr=d.price/d.rent;const payback=totalCost/netAnnual;
+  const band=d.cashOnly?(cash<=PROFILE.cash?"IN RANGE":cash<=PROFILE.cash*1.3?"STRETCH":"OUT OF RANGE"):(cash<=PROFILE.cash&&inst<=PROFILE.maxInst)?"IN RANGE":(cash<=PROFILE.cash*1.3&&inst<=PROFILE.legalInst)?"STRETCH":"OUT OF RANGE";
+  const sPrice=Math.max(0,Math.min(30,15-vsArea*100));
+  let sYield=Math.max(0,Math.min(25,(gross*100-4)/5*25));if(A.freeze)sYield=Math.max(0,sYield-2);
+  const sAfford=band==="IN RANGE"?(dbr<=0.33?20:17):band==="STRETCH"?9:2;const bedsOk=(d.beds||0)>=PROFILE.minBeds;const cityOk=PROFILE.cities.includes(AREAS[d.area].city);
+  const total=Math.round(sPrice+sYield+sAfford+d.growth+d.risk);
+  const label=total>=80?"STRONG DEAL":total>=65?"GOOD":total>=50?"FAIR":"PASS";
+  const lives=A.city===PROFILE.livesIn;const fitA=cf>=-300&&gross>=0.065;const fitB=lives&&inst<=rentM*1.15;
+  const suits=fitA&&fitB?"Both":fitA?"A · Rent out":fitB?"B · Live in":(lives?"Neither at this price":"Neither (live-in only if you move)");
+  return {A,ppsqm,vsArea,down,comm,rett,cash,loan,inst,dbr,rentM,maint,vac,cf,gross,net,ptr,payback,band,total,label,
+    parts:{price:sPrice,yield:sYield,afford:sAfford,growth:d.growth,risk:d.risk},fitA,fitB,suits,lives,totalCost,bedsOk,cityOk};
+}
+if(typeof module!=="undefined")module.exports={DEALS,AREAS,analyse,settings,budget,PROFILE,derive};
+</script>
+
+<script>
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const sar=n=>fmt(n)+" SAR";
+const pct=(n,d=1)=>(n*100).toFixed(d)+"%";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ICON={apartment:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/></svg>',
+ roof:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h18M6 9V5h12v4"/><rect x="5" y="9" width="14" height="12" rx="1"/><path d="M9 13h2M13 13h2M11 21v-3h2v3"/></svg>'};
+const state={s:settings(),f:{city:"",strat:"",type:"",max:900000,min:0},open:null};
+let store={};try{store=JSON.parse(localStorage.getItem("deskPrefs")||"{}")}catch(e){}
+if(store.s){delete store.s.rate;Object.assign(state.s,store.s)}
+function save(){try{localStorage.setItem("deskPrefs",JSON.stringify({s:state.s}))}catch(e){}}
+const cls=l=>l==="STRONG DEAL"?"s-strong":l==="GOOD"?"s-good":l==="FAIR"?"s-fair":"s-pass";
+const bandCls=b=>b==="IN RANGE"?"in":b==="STRETCH"?"stretch":"out";
+function computed(){return DEALS.map(d=>({d,x:analyse(d,state.s)})).sort((a,b)=>b.x.total-a.x.total)}
+function render(){
+  const all=computed();const b=budget(state.s);
+  document.getElementById("maxPrice").textContent=sar(b.maxPrice);
+  document.getElementById("maxPriceNote").textContent=(b.limit==="cash"?"limited by your savings":"limited by your income")+(state.s.comm?" · with broker fee":" · buying direct");
+  document.getElementById("instLbl").textContent=`Max installment (${Math.round(PROFILE.plan*100)}% of salary)`;
+  document.getElementById("maxInst").textContent=sar(b.maxInst);
+  document.getElementById("maxLoan").textContent=`≈ ${fmt(b.loan45/1000)}k max loan at ${(state.s.rate*100).toFixed(2)}% / ${state.s.term} yrs`;
+  const f=state.f;
+  const shown=all.filter(({d,x})=>x.cityOk&&x.bedsOk&&(!f.city||x.A.city===f.city)&&(!f.type||d.type===f.type)&&d.price<=f.max&&x.total>=f.min&&
+    (!f.strat||(f.strat==="A"?x.fitA:x.fitB)));
+  document.getElementById("nShown").textContent=shown.length;
+  const picks=all.filter(({x})=>x.cityOk&&x.bedsOk&&x.band!=="OUT OF RANGE").slice(0,3);
+  document.getElementById("picks").innerHTML=picks.map(({d,x},i)=>`<button data-open="${d.id}">${i+1}. ${esc(x.A.name)} · ${fmt(d.price/1000)}k · ${x.total}</button>`).join("");
+  const g=document.getElementById("grid");
+  g.innerHTML=shown.length?shown.map(({d,x})=>card(d,x)).join(""):`<div class="empty">No listings match your profile and these filters. Loosen the max price, minimum score, cities or bedrooms.</div>`;
+  renderConclusion(all,b);
+  if(state.view==="map")renderMap(shown);
+}
+function card(d,x){
+  const v=x.vsArea;const vc=v<0?"below":"above";
+  return `<article class="card">
+   <div class="card-top"><div class="icon" aria-hidden="true">${ICON[d.type]}</div>
+     <div class="ttl"><h3>${esc(d.title)}</h3><span class="ar" dir="rtl" lang="ar">${esc(d.titleAr)} · ${esc(x.A.ar)}</span><span class="muted" style="font-size:12.5px">${esc(x.A.name)} · ${esc(x.A.zone)} · ${d.type==="roof"?"Roof / penthouse":"Apartment"}</span></div>
+     <div class="score ${cls(x.label)}"><b>${x.total}</b><span>${x.label}</span></div></div>
+   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="price num">${fmt(d.price)} <span class="muted" style="font-size:13px">SAR</span></span><span class="num muted" style="font-size:13px">${fmt(d.size)} m²</span></div>
+   <dl class="kv" style="margin:0">
+     <div><dt>Price/m²</dt><dd>${fmt(x.ppsqm)}</dd></div>
+     <div><dt>vs area ask</dt><dd class="${vc}">${v<0?"▼":"▲"} ${pct(Math.abs(v),0)}</dd></div>
+     <div><dt>Rent/yr${d.rentEst?" *":""}</dt><dd>${fmt(d.rent)}</dd></div>
+     <div><dt>Gross yield</dt><dd>${pct(x.gross)}</dd></div>
+     <div><dt>Cash needed</dt><dd>${fmt(x.cash)}</dd></div>
+     <div><dt>Net CF/mo</dt><dd class="${x.cf>=0?"below":"above"}">${x.cf>=0?"+":"−"}${fmt(Math.abs(x.cf))}</dd></div>
+   </dl>
+   <div class="chips">${d.live?'<span class="chip in">Live result</span>':""}${d.isNew?'<span class="chip freeze">New today</span>':""}${d.cashOnly?'<span class="chip out">Cash only</span>':""}<span class="chip ${bandCls(x.band)}">${x.band}</span>${x.A.freeze?'<span class="chip freeze">Rent frozen to 2030</span>':""}<span class="chip">Suits: ${esc(x.suits)}</span></div>
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" data-open="${d.id}">View details</button>${locLinks(d)}</div>
+  </article>`;
+}
+function gm(d){return "https://www.google.com/maps/search/?api=1&query="+(d.live?encodeURIComponent((d.districtName||"")+", "+AREAS[d.area].city+", Saudi Arabia"):d.ll[0]+","+d.ll[1])}
+function locLinks(d){return `<span class="links"><a href="${gm(d)}" target="_blank" rel="noopener">${d.approx?"Approx. area":"Exact location"} ↗</a>${d.url?` · <a href="${d.url}" target="_blank" rel="noopener">Listing ↗</a>`:""}</span>`}
+function barRow(label,val,max,me){return `<div class="bar"><span>${label}</span><div class="track"><div class="fill${me?" me":""}" style="width:${Math.max(2,val/max*100)}%"></div></div><span class="v">${val==null?"n/a":fmt(val)}</span></div>`}
+function lineChart(t){
+  const pts=t.pts;const W=320,H=130,pl=40,pr=14,pt=14,pb=26;const vals=pts.map(p=>p[1]);
+  let lo=Math.min(...vals),hi=Math.max(...vals);if(t.unit==="%"){lo=Math.min(lo,0);hi=Math.max(hi,0)}const pad=(hi-lo)*0.15||1;lo-=pad;hi+=pad;
+  const X=i=>pl+(pts.length===1?0:i*(W-pl-pr)/(pts.length-1));const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+  const ticks=[lo+pad,(lo+hi)/2,hi-pad];
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:420px" role="img" aria-label="${esc(t.label)}">`;
+  ticks.forEach(v=>{s+=`<line class="gridl" x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${pl-6}" y="${Y(v)+3}" text-anchor="end">${t.unit==="%"?v.toFixed(1)+"%":fmt(v)}</text>`});
+  if(t.unit==="%")s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  s+=`<polyline class="ln" points="${pts.map((p,i)=>X(i)+","+Y(p[1])).join(" ")}"/>`;
+  pts.forEach((p,i)=>{const anchor=i===0?"start":i===pts.length-1?"end":"middle";s+=`<circle class="dot" cx="${X(i)}" cy="${Y(p[1])}" r="${i===pts.length-1?4:3}"/><text x="${X(i)}" y="${H-8}" text-anchor="${anchor}">${esc(p[0])}</text>`});
+  return s+`</svg><div class="note">${esc(t.label)} · ${pts.length} data points available</div>`;
+}
+function detail(id){
+  const d=DEALS.find(z=>z.id===id);const x=analyse(d,state.s);const A=x.A;const b=budget(state.s);
+  const maxBar=Math.max(x.ppsqm,A.ask,A.moj||0)*1.05;
+  const est=d.rentEst?' <span class="est">ESTIMATE</span>':"";
+  const P=x.parts;const sb=[["Price vs area",P.price,30,`${pct(Math.abs(x.vsArea),0)} ${x.vsArea<0?"below":"above"} the ${A.name} asking median (${fmt(A.ask)}/m², n=${A.askN})`],
+    ["Rental yield / cash flow",P.yield,25,`Gross ${pct(x.gross)}${A.freeze?"; −2 for zero rent growth under the Riyadh freeze":""}`],
+    ["Affordability",P.afford,20,`${x.band}: needs ${sar(x.cash)} cash vs your ${sar(PROFILE.cash)}; installment ${pct(x.dbr,0)} of salary`],
+    ["Area growth & demand",P.growth,15,"Judgement: index trend, liquidity, supply pipeline"],
+    ["Risk factors",P.risk,10,"Judgement: deed/paperwork, listing quality, oversupply (higher = safer)"]];
+  const flags=[...d.flags];if(d.cashOnly)flags.unshift("Cash only as advertised: full price needed upfront, no mortgage. Figures below assume no loan.");else if(x.band!=="IN RANGE")flags.unshift(`${x.band}: needs ${sar(x.cash)} upfront against your ${sar(PROFILE.cash)}.`);
+  const html=`
+  <div class="sheet-head"><div style="display:grid;gap:4px;min-width:0"><span class="eyebrow">${esc(A.zone)} · ${esc(d.id)}</span><h2 id="dTitle">${esc(d.title)}</h2><span class="muted" dir="rtl" lang="ar" style="text-align:start">${esc(d.titleAr)} · حي ${esc(A.ar)}</span></div>
+    <div style="display:flex;gap:8px;align-items:start"><div class="score ${cls(x.label)}"><b>${x.total}</b><span>${x.label}</span></div><button class="btn ghost" id="close" aria-label="Close details">Close</button></div></div>
+  <section class="sec"><h3>Verdict</h3><p style="margin:0">${esc(d.verdict)}</p><div class="chips"><span class="chip ${bandCls(x.band)}">${x.band}</span><span class="chip">Better for: ${esc(x.suits)}</span>${A.freeze?'<span class="chip freeze">Rent frozen to ~Sep 2030</span>':'<span class="chip">No rent freeze</span>'}</div></section>
+  <section class="sec"><h3>The listing</h3>
+    <dl class="kv" style="margin:0"><div><dt>Asking price</dt><dd>${fmt(d.price)}</dd></div><div><dt>Size</dt><dd>${fmt(d.size)} m²</dd></div><div><dt>Price/m²</dt><dd>${fmt(x.ppsqm)}</dd></div><div><dt>Layout</dt><dd style="font-family:var(--f-body)">${esc(d.rooms)}</dd></div></dl>
+    <ul class="qs">${d.facts.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
+    <div class="note">Source: ${d.live?esc(d.liveSrc)+" ":""}${d.src.filter(k=>k.startsWith("s")).map(k=>`<a href="${SRC[k][1]}" target="_blank" rel="noopener">${esc(SRC[k][0])}</a> (${esc(SRC[k][2])})`).join("; ")}.</div>
+    <div class="note">${d.approx?"Exact location not published; pin shows the Al Rimal area only.":`Pin: ${d.ll[0].toFixed(5)}, ${d.ll[1].toFixed(5)} (from the listing page)`} · ${locLinks(d)}</div></section>
+  <section class="sec"><h3>Area statistics · ${esc(A.name)} <span dir="rtl" lang="ar">${esc(A.ar)}</span></h3>
+    <div class="bars">${barRow("This deal /m²",x.ppsqm,maxBar,true)}${barRow(`Asking median (n=${A.askN})`,A.ask,maxBar)}${A.moj?barRow("MOJ median (all types)",A.moj,maxBar):""}</div>
+    <p class="note" style="margin:0">${esc(A.mojNote)}. Apartment-only transacted prices from SREM were not retrievable this scan.</p>
+    <div class="two"><div>${lineChart(A.trend)}</div>
+      <dl class="kv" style="margin:0;grid-template-columns:1fr;align-content:start">
+        <div><dt>Typical 2-bed rent</dt><dd>${A.rent2?fmt(A.rent2):"n/a"}</dd></div><div><dt>Typical 3-bed rent</dt><dd>${A.rent3?fmt(A.rent3):"n/a"}</dd></div>
+        <div><dt>Recent deals</dt><dd style="font-family:var(--f-body);font-size:12px">${esc(A.tx)}</dd></div></dl></div>
+    <p class="note" style="margin:0"><b>Rent trend:</b> ${esc(A.rentTrend)}<br><b>Liquidity:</b> ${esc(A.liq)}<br>National apartment prices +1.1% YoY in Q2 2026 (GASTAT).</p></section>
+  <section class="sec"><h3>Affordability for you · ${(state.s.rate*100).toFixed(2)}% APR, ${state.s.term} years</h3>
+    <dl class="kv" style="margin:0">
+      <div><dt>Down payment (${Math.round((1-PROFILE.ltv)*100)}%)</dt><dd>${fmt(x.down)}</dd></div><div><dt>Commission${state.s.comm?" 2.5%+VAT":""}</dt><dd>${fmt(x.comm)}</dd></div>
+      <div><dt>RETT 5%</dt><dd>${x.rett?fmt(x.rett):"0 (first-home support)"}</dd></div><div><dt>Bank fees <span class="est">ESTIMATE</span></dt><dd>5,000</dd></div>
+      <div><dt><b>Cash upfront</b></dt><dd><b>${fmt(x.cash)}</b></dd></div><div><dt>You have</dt><dd>${fmt(PROFILE.cash)}</dd></div>
+      <div><dt>Loan (${Math.round(PROFILE.ltv*100)}%)</dt><dd>${fmt(x.loan)}</dd></div><div><dt>Monthly installment</dt><dd>${fmt(x.inst)}</dd></div>
+      <div><dt>Installment / salary</dt><dd>${pct(x.dbr,0)}</dd></div><div><dt>Your max loan</dt><dd>${fmt(b.loan45)}</dd></div></dl>
+    <p class="note" style="margin:0">${PROFILE.rettExempt?"The state covers the 5% transaction tax up to 1,000,000 SAR for a Saudi citizen\'s first ready home. If you rent it out, ask ZATCA whether that breaks the condition.":"You pay the 5% real estate transaction tax: first-home support is only for Saudi citizens buying their first home."} ${PROFILE.saudi?"":"Non-Saudi buyers apply through the Saudi Properties platform and must check the unit is in an eligible zone; banks often ask for a 30% deposit."}</p></section>
+  <section class="two">
+    <div class="sec"><h3>A · Rent it out</h3>
+      <dl class="kv" style="margin:0;grid-template-columns:1fr"><div><dt>Rent / month${est}</dt><dd>${fmt(x.rentM)}</dd></div><div><dt>− Installment</dt><dd>${fmt(x.inst)}</dd></div><div><dt>− Maintenance 7.5%</dt><dd>${fmt(x.maint)}</dd></div><div><dt>− Vacancy (1 mo/yr)</dt><dd>${fmt(x.vac)}</dd></div></dl>
+      <span class="cf ${x.cf>=0?"below":"above"}">${x.cf>=0?"+":"−"}${fmt(Math.abs(x.cf))} SAR/mo</span>
+      <dl class="kv" style="margin:0;grid-template-columns:1fr"><div><dt>Gross yield</dt><dd>${pct(x.gross)}</dd></div><div><dt>Net yield (on total cost)</dt><dd>${pct(x.net)}</dd></div><div><dt>Price-to-rent</dt><dd>${x.ptr.toFixed(1)}×</dd></div><div><dt>Payback (unlevered)</dt><dd>${x.payback.toFixed(1)} yrs</dd></div></dl>
+      <p class="note" style="margin:0">${esc(d.rentWhy)}</p></div>
+    <div class="sec"><h3>B · Live in it</h3>
+      <dl class="kv" style="margin:0;grid-template-columns:1fr"><div><dt>Installment</dt><dd>${fmt(x.inst)}</dd></div><div><dt>Rent for the same unit${est}</dt><dd>${fmt(x.rentM)}</dd></div></dl>
+      <span class="cf ${x.inst<=x.rentM?"below":"above"}">${x.inst<=x.rentM?"Owning costs "+fmt(x.rentM-x.inst)+" less":"Owning costs "+fmt(x.inst-x.rentM)+" more"}/mo</span>
+      <p class="note" style="margin:0">${x.lives?"You live in "+esc(A.city)+", so this is a real option.":"Applies only if you move to "+esc(A.city)+"; otherwise treat this unit as a rental."} Owning also carries maintenance and owners'-association fees not shown here.</p></div>
+  </section>
+  <section class="sec"><h3>Score breakdown · ${x.total}/100</h3><div class="sb">${sb.map(([n,v,m,w])=>`<div class="r"><span>${n}</span><span class="num">${v.toFixed(0)} / ${m}</span><div class="t"><i style="width:${v/m*100}%"></i></div><small>${esc(w)}</small></div>`).join("")}</div></section>
+  <section class="sec"><h3>Red flags and risks</h3><ul class="flags">${flags.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></section>
+  <section class="sec"><h3>Ask the seller or broker</h3><ul class="qs">${[...d.qs,"Is the broker REGA-licensed (FAL number)?","Can I see the electronic deed (صك إلكتروني) and confirm no mortgage or dispute on it?"].map(q=>`<li>${esc(q)}</li>`).join("")}</ul></section>`;
+  document.getElementById("sheetIn").innerHTML=html;
+  document.getElementById("scrim").hidden=false;const sh=document.getElementById("sheet");sh.hidden=false;sh.scrollTop=0;
+  state.open=id;document.getElementById("close").focus();
+}
+function closeSheet(){document.getElementById("scrim").hidden=true;document.getElementById("sheet").hidden=true;state.open=null}
+document.addEventListener("click",e=>{const o=e.target.closest("[data-open]");if(o){if(o.closest("#mapView")){mapS.hl=o.dataset.open;renderMap(mapS.lastShown)}detail(o.dataset.open);return}
+  if(e.target.id==="close"||e.target.id==="scrim")closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state.open)closeSheet()});
+function seg(id,cb,initial){const el=document.getElementById(id);const set=v=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
+  if(initial!=null)set(initial);el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;set(b.dataset.v);cb(b.dataset.v)})}
+seg("fStrat",v=>{state.f.strat=v;render()});
+seg("aComm",v=>{state.s.comm=v==="1";save();render();if(state.open)detail(state.open)},state.s.comm?"1":"0");
+seg("aRate",v=>{state.s.rate=+v;save();render();if(state.open)detail(state.open)},String(state.s.rate));
+seg("aTerm",v=>{state.s.term=+v;save();render();if(state.open)detail(state.open)},String(state.s.term));
+document.getElementById("fCity").addEventListener("change",e=>{state.f.city=e.target.value;render()});
+document.getElementById("fType").addEventListener("change",e=>{state.f.type=e.target.value;render()});
+const fb=document.getElementById("fBudget"),fs=document.getElementById("fScore");
+const syncR=()=>{state.f.max=+fb.value;state.f.min=+fs.value;document.getElementById("oBudget").textContent=fmt(+fb.value/1000)+"k";document.getElementById("oScore").textContent=fs.value};
+fb.addEventListener("input",()=>{syncR();render()});fs.addEventListener("input",()=>{syncR();render()});syncR();
+
+const pinCls=l=>l==="STRONG DEAL"?"p-strong":l==="GOOD"?"p-good":l==="FAIR"?"p-fair":"p-pass";
+const TILES=new Set(["11_1245_895","11_1245_896","11_1245_897","11_1245_898","11_1246_895","11_1246_896","11_1246_897","11_1246_898","11_1247_895","11_1247_896","11_1247_897","11_1247_898","11_1288_876","11_1288_877","11_1288_878","11_1288_879","11_1289_876","11_1289_877","11_1289_878","11_1289_879","11_1290_876","11_1290_877","11_1290_878","11_1290_879","11_1291_876","11_1291_877","11_1291_878","11_1291_879","11_1308_867","11_1308_868","11_1308_869","11_1308_870","11_1309_867","11_1309_868","11_1309_869","11_1309_870","11_1310_867","11_1310_868","11_1310_869","11_1310_870","13_4983_3587","13_4983_3588","13_4983_3589","13_4983_3590","13_4984_3587","13_4984_3588","13_4984_3589","13_4984_3590","13_4985_3587","13_4985_3588","13_4985_3589","13_4985_3590","13_4986_3587","13_4986_3588","13_4986_3589","13_4986_3590","13_4987_3587","13_4987_3588","13_4987_3589","13_4987_3590","13_5156_3508","13_5156_3509","13_5156_3510","13_5156_3511","13_5156_3512","13_5156_3513","13_5157_3508","13_5157_3509","13_5157_3510","13_5157_3511","13_5157_3512","13_5157_3513","13_5158_3508","13_5158_3509","13_5158_3510","13_5158_3511","13_5158_3512","13_5158_3513","13_5159_3508","13_5159_3509","13_5159_3510","13_5159_3511","13_5159_3512","13_5159_3513","13_5160_3508","13_5160_3509","13_5160_3510","13_5160_3511","13_5160_3512","13_5160_3513","13_5161_3508","13_5161_3509","13_5161_3510","13_5161_3511","13_5161_3512","13_5161_3513","13_5162_3508","13_5162_3509","13_5162_3510","13_5162_3511","13_5162_3512","13_5162_3513","13_5236_3473","13_5236_3474","13_5236_3475","13_5236_3476","13_5236_3477","13_5237_3473","13_5237_3474","13_5237_3475","13_5237_3476","13_5237_3477","13_5238_3473","13_5238_3474","13_5238_3475","13_5238_3476","13_5238_3477","13_5239_3473","13_5239_3474","13_5239_3475","13_5239_3476","13_5239_3477","15_19939_14351","15_19939_14352","15_19939_14353","15_19940_14351","15_19940_14352","15_19940_14353","15_19941_14351","15_19941_14352","15_19941_14353","15_20625_14042","15_20625_14043","15_20625_14044","15_20626_14042","15_20626_14043","15_20626_14044","15_20627_14042","15_20627_14043","15_20627_14044","15_20627_14045","15_20627_14046","15_20627_14047","15_20628_14045","15_20628_14046","15_20628_14047","15_20629_14045","15_20629_14046","15_20629_14047","15_20637_14050","15_20637_14051","15_20637_14052","15_20638_14050","15_20638_14051","15_20638_14052","15_20639_14050","15_20639_14051","15_20639_14052","15_20641_14037","15_20641_14038","15_20641_14039","15_20642_14037","15_20642_14038","15_20642_14039","15_20643_14037","15_20643_14038","15_20643_14039","15_20643_14045","15_20643_14046","15_20643_14047","15_20644_14045","15_20644_14046","15_20644_14047","15_20644_14048","15_20645_14045","15_20645_14046","15_20645_14047","15_20645_14048","15_20646_14045","15_20646_14046","15_20646_14047","15_20646_14048","15_20952_13894","15_20952_13895","15_20952_13896","15_20952_13907","15_20952_13908","15_20952_13909","15_20953_13894","15_20953_13895","15_20953_13896","15_20953_13907","15_20953_13908","15_20953_13909","15_20953_13910","15_20954_13894","15_20954_13895","15_20954_13896","15_20954_13907","15_20954_13908","15_20954_13909","15_20954_13910","15_20955_13908","15_20955_13909","15_20955_13910","16_39880_28703","16_39880_28704","16_39880_28705","16_39881_28703","16_39881_28704","16_39881_28705","16_39882_28703","16_39882_28704","16_39882_28705","17_79761_57408","17_79761_57409","17_79761_57410","17_79762_57408","17_79762_57409","17_79762_57410","17_79763_57408","17_79763_57409","17_79763_57410","17_82570_56154","17_82570_56155","17_82570_56156","17_82571_56154","17_82571_56155","17_82571_56156","17_82572_56154","17_82572_56155","17_82572_56156","17_83814_55582","17_83814_55583","17_83814_55584","17_83815_55582","17_83815_55583","17_83815_55584","17_83815_55633","17_83815_55634","17_83815_55635","17_83816_55582","17_83816_55583","17_83816_55584","17_83816_55633","17_83816_55634","17_83816_55635","17_83817_55633","17_83817_55634","17_83817_55635","5_18_12","5_18_13","5_18_14","5_19_12","5_19_13","5_19_14","5_20_12","5_20_13","5_20_14","5_21_12","5_21_13","5_21_14","6_38_25","6_38_26","6_38_27","6_38_28","6_38_29","6_39_25","6_39_26","6_39_27","6_39_28","6_39_29","6_40_25","6_40_26","6_40_27","6_40_28","6_40_29","6_41_25","6_41_26","6_41_27","6_41_28","6_41_29"]);const TZ=[...new Set([...TILES].map(k=>+k.split("_")[0]))].sort((a,b)=>a-b);
+const MW=760,MH=460;
+const mapS={b:null,drag:null,hl:null,lastShown:[]};
+try{const v=localStorage.getItem("deskView");state.view=(v==="map"||v==="list")?v:"list"}catch(e){state.view="list"}
+const WX=lo=>(lo+180)/360*256;const WY=la=>{const r=la*Math.PI/180;return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256};
+const IY=y=>{const n=Math.PI-2*Math.PI*y/256;return 180/Math.PI*Math.atan(Math.sinh(n))};const IX=x=>x/256*360-180;
+function fit(pts,minSpan){const xs=pts.map(p=>WX(p[1])),ys=pts.map(p=>WY(p[0]));const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const m=minSpan/360*256;const w=Math.max(x1-x0,m)*1.35,h=Math.max(y1-y0,m*0.6)*1.35;return {cx:(x0+x1)/2,cy:(y0+y1)/2,s:Math.min(MW/w,MH/h,2**18)}}
+const proj=(b,la,lo)=>[MW/2+(WX(lo)-b.cx)*b.s,MH/2+(WY(la)-b.cy)*b.s];
+const KSA_B=()=>fit([[16,34.5],[32.3,55.7]],1);
+function viewName(b){if(Math.log2(b.s)<8)return null;const la=IY(b.cy),lo=IX(b.cx);const c={Riyadh:[24.8,46.7],Jeddah:[21.7,39.1],"Al Khobar":[26.3,50.2]};let best=null,bd=1e9;for(const [n,[a,o]] of Object.entries(c)){const d=Math.hypot(a-la,o-lo);if(d<bd){bd=d;best=n}}return bd<1.2?best:null}
+function cluster(items,b){const pts=items.map(it=>({it,p:proj(b,...it.d.ll)}));const out=[];const R=42;
+  pts.forEach(o=>{const c=out.find(c=>Math.hypot(c.p[0]-o.p[0],c.p[1]-o.p[1])<R);if(c){c.m.push(o);c.p=[(c.p[0]*(c.m.length-1)+o.p[0])/c.m.length,(c.p[1]*(c.m.length-1)+o.p[1])/c.m.length]}else out.push({p:o.p,m:[o]})});return out}
+function tileLayer(b){const ze=Math.log2(b.s);let g="";const left=b.cx-MW/2/b.s,top=b.cy-MH/2/b.s,right=b.cx+MW/2/b.s,bot=b.cy+MH/2/b.s;
+  TZ.filter(L=>L<=Math.ceil(ze)+1).forEach(L=>{const n=2**L,ts=256/n,px=ts*b.s;if(px<24&&L!==TZ[0])return;
+    for(let x=Math.floor(left/ts);x<=Math.floor(right/ts);x++)for(let y=Math.floor(top/ts);y<=Math.floor(bot/ts);y++){const k=L+"_"+x+"_"+y;if(!TILES.has(k))continue;
+      g+=`<image class="tile" href="${(window.TILEDATA&&window.TILEDATA[k])||""}" x="${(MW/2+(x*ts-b.cx)*b.s).toFixed(1)}" y="${(MH/2+(y*ts-b.cy)*b.s).toFixed(1)}" width="${(px+0.6).toFixed(1)}" height="${(px+0.6).toFixed(1)}" preserveAspectRatio="none"/>`}});return g}
+function loadTiles(){if(window.TILEDATA||mapS.tl)return;mapS.tl=true;const sc=document.createElement("script");sc.src="tiles.js";sc.onload=()=>renderMap(mapS.lastShown);sc.onerror=()=>{mapS.tl=false};document.head.appendChild(sc)}
+function renderMap(shown){
+  loadTiles();mapS.lastShown=shown;if(!mapS.b)mapS.b=KSA_B();
+  const b=mapS.b,svg=document.getElementById("mapSvg");const ze=Math.log2(b.s);let g=tileLayer(b);
+  const cl=cluster(shown,b);const deep=ze>=16;
+  cl.forEach((c,ci)=>{const [x,y]=c.p;if(x<-30||x>MW+30||y<-30||y>MH+30)return;
+    const lats=c.m.map(o=>o.it.d.ll[0]),lngs=c.m.map(o=>o.it.d.ll[1]);const spread=Math.max(...lats)-Math.min(...lats)+Math.max(...lngs)-Math.min(...lngs);
+    if(c.m.length>1&&!(spread<0.0012)){const best=c.m.reduce((a,o)=>o.it.x.total>a.it.x.total?o:a);const r=14+Math.min(c.m.length,10)*1.6;
+      const cities=[...new Set(c.m.map(o=>o.it.x.A.city))];const lab=ze<8&&cities.length===1?cities[0]:(c.m.length+" deals");
+      g+=`<g class="clu" tabindex="0" role="button" data-ci="${ci}" aria-label="${esc(lab)}: ${c.m.length} deals, best score ${best.it.x.total}. Zoom in"><circle class="halo2" cx="${x}" cy="${y}" r="${r+5}"/><circle class="dotm ${pinCls(best.it.x.label)}" cx="${x}" cy="${y}" r="${r}"/><text class="cnt" x="${x}" y="${y+4}" text-anchor="middle">${c.m.length}</text><text class="clab" x="${x+r+7}" y="${y+5}">${esc(lab)}</text></g>`;return}
+    const n=c.m.length;c.m.forEach((o,i)=>{let px=x,py=y,lft=false;if(n>1){const a=-Math.PI/2+i*2*Math.PI/n;px=x+Math.cos(a)*36;py=y+Math.sin(a)*36;lft=Math.cos(a)<-0.2;g+=`<line class="spoke" x1="${x}" y1="${y}" x2="${px}" y2="${py}"/>`}
+      const d=o.it.d,X=o.it.x;const hl=mapS.hl===d.id;
+      g+=`<g class="pin" tabindex="0" role="button" data-open="${d.id}" aria-label="${esc(d.title)}, ${fmt(d.price)} SAR, score ${X.total}">${hl?`<circle cx="${px}" cy="${py}" r="17" class="hlr"/>`:""}<circle class="dotm ${d.approx?"apx":pinCls(X.label)}" cx="${px}" cy="${py}" r="12"/><text class="cnt${d.approx?" apxt":""}" x="${px}" y="${py+4}" text-anchor="middle">${X.total}</text>${(ze>=11||n>1)?`<text class="plab" x="${lft?px-15:px+15}" y="${py+4}" text-anchor="${lft?"end":"start"}">${fmt(d.price/1000)}k${deep?" · "+esc(d.id):""}</text>`:""}</g>`})});
+  const lat=IY(b.cy);const kmPx=40075.016*Math.cos(lat*Math.PI/180)/256/b.s;const bar=[1000,500,200,100,50,20,10,5,2,1,0.5,0.2,0.1,0.05].find(v=>v/kmPx<=160&&v/kmPx>=40)||1;
+  g+=`<rect class="sbg" x="8" y="${MH-36}" width="${bar/kmPx+16}" height="28" rx="4"/><line class="sbar" x1="16" y1="${MH-14}" x2="${16+bar/kmPx}" y2="${MH-14}"/><text class="sbt" x="16" y="${MH-20}">${bar>=1?bar+" km":bar*1000+" m"}</text>`;
+  svg.innerHTML=g;mapS.cl=cl;
+  const vn=viewName(b);document.getElementById("mapCrumb").innerHTML=`<button data-jump="all">Saudi Arabia</button>${vn?` › <button data-jump="${esc(vn)}">${esc(vn)}</button>`:""}${vn&&ze>=14?" › close-up":""}`;
+  const inside=shown.filter(({d})=>{const [x,y]=proj(b,...d.ll);return x>=0&&x<=MW&&y>=0&&y<=MH});
+  document.getElementById("inViewTitle").textContent=`Deals in view (${inside.length})`;
+  document.getElementById("inViewNote").textContent=inside.length<shown.length?`${shown.length-inside.length} more outside this view`:"";
+  document.getElementById("inView").innerHTML=inside.length?inside.sort((a,b)=>b.x.total-a.x.total).map(({d,x})=>`<div class="drow${mapS.hl===d.id?" hl":""}"><span class="mini ${cls(x.label)}">${x.total}</span><span style="min-width:0">${esc(d.title)}<br><span class="muted num" style="font-size:12px">${fmt(d.price)} SAR · ${fmt(d.size)} m² · ${esc(x.A.name)} · ${x.band}</span><br>${locLinks(d)}</span><button class="btn" data-open="${d.id}">Details</button></div>`).join(""):'<p class="note" style="margin:0">No deals in this view. Zoom out or tap All.</p>';
+}
+function jump(v){const sh=mapS.lastShown;const pts=(v==="all"?sh:sh.filter(x=>x.x.A.city===v)).map(x=>x.d.ll);mapS.b=v==="all"?KSA_B():(pts.length?fit(pts,0.01):mapS.b);mapS.hl=null;renderMap(sh)}
+function zoom(f){mapS.b={...mapS.b,s:Math.min(Math.max(mapS.b.s/f,8),2**18)};renderMap(mapS.lastShown)}
+document.getElementById("mapJump").addEventListener("click",e=>{const b=e.target.closest("button");if(b)jump(b.dataset.v)});
+document.getElementById("mapCrumb").addEventListener("click",e=>{const b=e.target.closest("button");if(b)jump(b.dataset.jump)});
+document.getElementById("zIn").addEventListener("click",()=>zoom(0.5));document.getElementById("zOut").addEventListener("click",()=>zoom(2));
+const msvg=document.getElementById("mapSvg");
+function cluClick(t){const c=mapS.cl[+t.dataset.ci];if(!c)return;mapS.b=fit(c.m.map(o=>o.it.d.ll),0.004);renderMap(mapS.lastShown)}
+msvg.addEventListener("pointerdown",e=>{mapS.drag={x:e.clientX,y:e.clientY,b:{...mapS.b},moved:false}});
+msvg.addEventListener("pointermove",e=>{const d=mapS.drag;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!d.moved&&Math.hypot(dx,dy)<5)return;
+  if(!d.moved){d.moved=true;msvg.setPointerCapture(e.pointerId);msvg.classList.add("drag")}const sc=MW/msvg.getBoundingClientRect().width;
+  mapS.b={...d.b,cx:d.b.cx-dx*sc/d.b.s,cy:d.b.cy-dy*sc/d.b.s};renderMap(mapS.lastShown)});
+const endDrag=e=>{const d=mapS.drag;mapS.drag=null;msvg.classList.remove("drag");if(d&&d.moved){mapS.justDragged=true;setTimeout(()=>mapS.justDragged=false,0)}};
+msvg.addEventListener("pointerup",endDrag);msvg.addEventListener("pointercancel",endDrag);
+msvg.addEventListener("click",e=>{if(mapS.justDragged){e.stopPropagation();return}const t=e.target.closest(".clu");if(t)cluClick(t)},true);
+msvg.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const t=e.target.closest(".clu,.pin");if(!t)return;e.preventDefault();if(t.classList.contains("clu"))cluClick(t);else{mapS.hl=t.dataset.open;detail(t.dataset.open)}});
+function applyView(){const m=state.view==="map";document.getElementById("grid").hidden=m;document.getElementById("mapView").hidden=!m}
+seg("fView",v=>{state.view=v;try{localStorage.setItem("deskView",v)}catch(e){}applyView();render()},state.view);
+document.getElementById("fCity").addEventListener("change",()=>{if(state.view==="map")jump(state.f.city||"all")});
+applyView();
+// area table
+const AREA_ROWS=[
+ ["Riyadh North","Al Narjis","النرجس",null,8478,"+20.2% (Raghdan tag)",null,null,"Frozen","a2"],
+ ["Riyadh North","Al Malqa","الملقا",null,9000,"+17% (Raghdan tag)",null,null,"Frozen","a2"],
+ ["Riyadh North","Al Yasmin","الياسمين",null,7101,"+11.6% (Raghdan tag)",null,null,"Frozen","a2"],
+ ["Riyadh North","Al Arid","العارض","8,918 (n=4)",null,"Riyadh region +4.2% YoY Q2",null,null,"Frozen","s4"],
+ ["Riyadh East","Al Rimal","الرمال","5,034 (n=21)",3800,"+20.9% (Raghdan tag)",38000,45000,"Frozen","a2"],
+ ["Jeddah North","Al Yaqoot","الياقوت","3,543 (n=17)",2600,"+15.6% last 12 mo",24000,25000,"None","a1"],
+ ["Jeddah North","Al Zumorrodah","الزمرد",null,3096,"+13.7% YoY",null,null,"None","a3"],
+ ["Jeddah North","Obhur Al Shamaliyah","أبحر الشمالية",null,4491,"−4.1% YoY",null,null,"None","a4"],
+ ["Al Khobar","Al Aqrabiyah","العقربية",null,3103,"+11.4% YoY",24000,28000,"None","a5"],
+ ["Al Khobar","Al Rakah Al Janubiyah","الراكة الجنوبية","4,065 (Khobar, n=12)",2552,"Eastern Prov. +6.9% YoY Q1",null,null,"None","a6"]];
+document.getElementById("areaTbl").innerHTML=`<thead><tr><th>Zone</th><th>District</th><th class="n">Apt asking /m²</th><th class="n">MOJ median /m²</th><th>Trend</th><th class="n">2-bed rent</th><th class="n">3-bed rent</th><th class="n">Est. gross yield</th><th>Rent freeze</th></tr></thead><tbody>`+
+ AREA_ROWS.map(r=>{const ask=r[3]?parseFloat(r[3].replace(/,/g,"")):null;const y=(ask&&r[7])?pct(r[7]/(ask*120),1):(ask&&r[6])?pct(r[6]/(ask*85),1):"n/a";
+  return `<tr><td>${r[0]}</td><td>${r[1]} <span class="muted" dir="rtl" lang="ar">${r[2]}</span></td><td class="n">${r[3]||"n/a"}</td><td class="n">${r[4]?fmt(r[4]):"n/a"}</td><td>${r[5]}</td><td class="n">${r[6]?fmt(r[6]):"n/a"}</td><td class="n">${r[7]?fmt(r[7]):"n/a"}</td><td class="n">${y}</td><td>${r[8]}</td></tr>`}).join("")+`</tbody>`;
+// rules
+const RULES=[
+ "<b>Riyadh rent freeze:</b> no extension to other cities (REGA, 2 Oct 2026). Confirmed in force since 25 Sep 2025 for five years inside Riyadh's urban boundary. Vacant previously-leased units are capped at their last Ejar contract; never-leased units are set freely, then frozen. Tenants can renew except for non-payment, safety defects, or owner/first-degree-relative use. Riyadh rents still rose 4.5% YoY in Aug 2026 (new leases), and rent's share of household income fell to about 15%.",
+ "<b>RETT:</b> 5%. The state covers it up to 1,000,000 SAR for a Saudi's first ready home (also under-construction units with a completion certificate per Sakani). Not for land or self-build (ZATCA, Aug 2026). Breaching an exemption condition revives the tax; whether renting the unit out breaches it is unconfirmed.",
+ "<b>Debt burden:</b> for salaries of 15,000 SAR or less, total monthly debt including the mortgage is capped at 55% of salary (banks applied this to subsidised loans too from Sep 2025). For 15,000–25,000 SAR the cap is 65%. Your chosen comfort level sets the installment used here.",
+ "<b>LTV:</b> up to 90% for a citizen's first home. Non-first homes and non-Saudi buyers are modelled at 70% (banks often ask non-Saudis for at least 30% down). A bank may lend less if the unit is declared as an investment.",
+ "<b>Rates:</b> SAMA raised the repo rate 25 bp to 4.50% on 16 Sep 2026, matching the Fed\'s hike to 3.75%–4.00%. Mortgage offers published before the hike ran about 4.1%–5.6% APR. Modelled at 5.25%, stress 6.25%. Next Fed decision 28 Oct 2026; a second hike would push offers up again.",
+ "<b>Prices:</b> GASTAT Q2 2026: index +1.3% YoY; apartments +1.1%, villas −9.7%; Riyadh region +4.2%, Makkah +0.4%. Eastern Province was +6.9% in Q1 2026. Q3 2026 figures not yet found.",
+ "<b>Supply:</b> about 57k new units due in Riyadh, 36k in Jeddah and 12k in Dammam over 2026–27. Expect rent pressure on new 2- and 3-beds.",
+ "<b>Infath auctions:</b> active (46 auctions, 541 properties, 1–15 Aug 2026), but no auction apartment under about 900k was found in these areas on 25 Oct 2026.",
+ "<b>Non-Saudi buyers:</b> the ownership law took effect 22 Jan 2026. Residents apply with their Iqama through the Saudi Properties platform; Riyadh and Jeddah use designated ownership zones, so confirm a unit is eligible before paying anything."];
+document.getElementById("rules").innerHTML=RULES.map(r=>`<li>${r}</li>`).join("");
+document.getElementById("sources").innerHTML=Object.values(SRC).map(([t,u,d])=>`<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a> <span class="muted">— ${esc(d)}</span></li>`).join("");
+// ---------- profile wizard + conclusion ----------
+const PKEY="fhfProfile.v1";
+const STEPS=[
+ {t:"Who is buying?",h:"Saudi citizens buying a first home get 90% financing and the 5% tax covered up to 1M SAR.",f:[
+   {k:"saudi",type:"seg",label:"Nationality",opts:[[true,"Saudi citizen"],[false,"Non-Saudi resident"]]},
+   {k:"firstHome",type:"seg",label:"Is this your first home?",opts:[[true,"Yes"],[false,"No, I already own one"]]}]},
+ {t:"Your income",h:"Use your gross monthly salary, the figure on your salary certificate.",f:[
+   {k:"salary",type:"num",label:"Monthly salary (SAR)",ph:"e.g. 15000",min:1000},
+   {k:"oblig",type:"num",label:"Existing loan payments per month (SAR)",ph:"0 if none",min:0},
+   {k:"employ",type:"seg",label:"Employer",opts:[["gov","Government"],["semi","Semi-government"],["private","Private"],["retired","Retired"]]}]},
+ {t:"Your savings",h:"Cash you can use for the deposit, broker fee and bank fees. Keep an emergency fund aside.",f:[
+   {k:"cash",type:"num",label:"Savings available (SAR)",ph:"e.g. 80000",min:0}]},
+ {t:"What is the home for?",h:"Every listing is checked both ways; this sets which one leads your conclusion.",f:[
+   {k:"goal",type:"seg",label:"Goal",opts:[["rent","Rent it out"],["live","Live in it"],["either","Either"]]},
+   {k:"livesIn",type:"seg",label:"Which city do you live in?",opts:[["Riyadh","Riyadh"],["Jeddah","Jeddah"],["Al Khobar","Al Khobar"],["Other","Elsewhere"]]}]},
+ {t:"Where and how big?",h:"Listings cover Riyadh (North and East), North Jeddah and Al Khobar.",f:[
+   {k:"cities",type:"multi",label:"Cities to consider",opts:[["Riyadh","Riyadh"],["Jeddah","Jeddah"],["Al Khobar","Al Khobar"]]},
+   {k:"minBeds",type:"seg",label:"Minimum bedrooms",opts:[[0,"Any"],[2,"2+"],[3,"3+"]]}]},
+ {t:"How much of your salary can go to the installment?",h:"Banks cap total debt at 55% of salary up to 15,000 SAR and 65% above it. Lower is safer.",f:[
+   {k:"comfort",type:"seg",label:"Installment level",opts:[["cons","Careful · 33%"],["std","Standard · 45%"],["max","Bank maximum"]]}]}
+];
+const EXAMPLE={saudi:true,firstHome:true,salary:15000,oblig:0,cash:80000,employ:"private",goal:"either",livesIn:"Riyadh",cities:["Riyadh","Jeddah","Al Khobar"],minBeds:0,comfort:"std"};
+const wiz={step:0,draft:null};
+function loadProfile(){try{const v=JSON.parse(localStorage.getItem(PKEY)||"null");if(v&&v.salary>0)return v}catch(e){}return null}
+function saveProfile(p){try{localStorage.setItem(PKEY,JSON.stringify(p))}catch(e){}}
+function fieldHtml(f,v){const id="w_"+f.k;
+  if(f.type==="num")return `<div class="wf"><label for="${id}">${f.label}</label><input id="${id}" class="num" inputmode="numeric" type="number" min="${f.min}" step="500" placeholder="${f.ph}" value="${v===undefined||v===null||v===0&&f.k!=="oblig"?"":v}"></div>`;
+  if(f.type==="multi")return `<div class="wf"><span class="lbl2">${f.label}</span><div class="chipset">${f.opts.map(([o,l])=>`<label class="chk"><input type="checkbox" name="${id}" value="${o}" ${v.includes(o)?"checked":""}> ${l}</label>`).join("")}</div></div>`;
+  return `<div class="wf"><span class="lbl2">${f.label}</span><div class="seg wseg" data-k="${f.k}">${f.opts.map(([o,l])=>`<button type="button" data-v='${JSON.stringify(o)}' aria-pressed="${JSON.stringify(v)===JSON.stringify(o)}">${l}</button>`).join("")}</div></div>`}
+function renderWiz(){const el=document.getElementById("wiz");const st=STEPS[wiz.step];const d=wiz.draft;
+  el.innerHTML=`<div class="wtop"><span class="eyebrow">Step ${wiz.step+1} of ${STEPS.length}</span><div class="wbar"><i style="width:${(wiz.step+1)/STEPS.length*100}%"></i></div></div>
+   <h2>${st.t}</h2><p class="note" style="margin:0">${st.h}</p>
+   <form id="wform" class="wgrid" novalidate>${st.f.map(f=>fieldHtml(f,d[f.k])).join("")}<p class="werr" id="werr" role="alert"></p>
+   <div class="wnav">${wiz.step?'<button type="button" class="btn ghost" id="wBack">Back</button>':(loadProfile()?'<button type="button" class="btn ghost" id="wCancel">Cancel</button>':'<button type="button" class="btn ghost" id="wEx">Try an example profile</button>')}<button type="submit" class="btn">${wiz.step===STEPS.length-1?"Show my results":"Next"}</button></div></form>`;
+  el.querySelectorAll(".wseg").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;d[g.dataset.k]=JSON.parse(b.dataset.v);g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))}));
+  const f1=el.querySelector("input");if(f1&&f1.type==="number")f1.focus();
+  el.querySelector("#wform").addEventListener("submit",e=>{e.preventDefault();
+    for(const f of st.f){if(f.type==="num"){const v=+(el.querySelector("#w_"+f.k).value||0);if(f.k==="salary"&&!(v>=1000)){return werr("Enter your monthly salary in SAR (at least 1,000).")}if(v<0)return werr("Amounts cannot be negative.");d[f.k]=v}
+      if(f.type==="multi"){const v=[...el.querySelectorAll(`input[name="w_${f.k}"]:checked`)].map(i=>i.value);if(!v.length)return werr("Pick at least one city.");d[f.k]=v}}
+    if(wiz.step<STEPS.length-1){wiz.step++;renderWiz()}else finishWiz(d)});
+  const bk=el.querySelector("#wBack");if(bk)bk.onclick=()=>{wiz.step--;renderWiz()};
+  const ex=el.querySelector("#wEx");if(ex)ex.onclick=()=>finishWiz({...EXAMPLE},true);
+  const cc=el.querySelector("#wCancel");if(cc)cc.onclick=()=>showResults();}
+function werr(m){document.getElementById("werr").textContent=m}
+function openWiz(){const cur=loadProfile();wiz.draft=Object.assign({},EXAMPLE,cur||{salary:0,cash:0});wiz.step=0;
+  ["strip","controls","dealsSec","concl","livePanel"].forEach(i=>document.getElementById(i).hidden=true);const w=document.getElementById("wiz");w.hidden=false;renderWiz();w.scrollIntoView({block:"start"})}
+function finishWiz(p,example){p.example=!!example;saveProfile(p);applyProfile(p);showResults()}
+function applyProfile(p){Object.assign(PROFILE,p);derive();
+  const fb=document.getElementById("fBudget");const mx=Math.max(900000,Math.ceil(budget(state.s).maxPrice/50000)*50000);fb.max=Math.min(mx,1500000);fb.value=fb.max;state.f.max=+fb.max;
+  if(typeof syncR==="function")syncR();mapS.b=null}
+function showResults(){document.getElementById("wiz").hidden=true;["strip","controls","dealsSec","concl","livePanel"].forEach(i=>document.getElementById(i).hidden=false);render();document.getElementById("concl").scrollIntoView({block:"start"})}
+const k=n=>n>=1e6?(n/1e6).toFixed(2)+"M":fmt(Math.round(n/1000))+"k";
+function renderConclusion(all,b){const P=PROFILE;const el=document.getElementById("concl");if(!P.salary){el.innerHTML="";return}
+  const mine=all.filter(({x})=>x.cityOk&&x.bedsOk);const inR=mine.filter(({x})=>x.band==="IN RANGE"),str=mine.filter(({x})=>x.band==="STRETCH");
+  const rentPick=[...inR].filter(({x})=>x.fitA).sort((a,c)=>c.x.cf-a.x.cf||c.x.total-a.x.total);
+  const livePick=[...inR].filter(({x})=>x.lives).sort((a,c)=>c.x.total-a.x.total);
+  const best=[...inR].sort((a,c)=>c.x.total-a.x.total);
+  let picks=P.goal==="rent"?rentPick.concat(best.filter(z=>!rentPick.includes(z))):P.goal==="live"?livePick.concat(best.filter(z=>!livePick.includes(z))):best;picks=picks.slice(0,3);
+  const lim=b.limit==="cash"?`your savings set the limit; your income could support about ${k(b.byIncome)}`:`your income sets the limit; your savings could cover a deposit on about ${k(b.byCash)}`;
+  let h=`<div class="cl-head"><div><span class="eyebrow">Your conclusion${P.example?" · example profile":""}</span><h2>You can afford up to about ${sar(b.maxPrice)}</h2>
+    <p style="margin:0">${state.s.comm?"Through a broker":"Buying direct"}, ${lim}. That assumes a ${Math.round(P.ltv*100)}% loan at ${(state.s.rate*100).toFixed(2)}% over ${state.s.term} years and an installment of up to ${sar(P.maxInst)} a month (${Math.round(P.plan*100)}% of salary${P.oblig?` after your ${sar(P.oblig)} of existing payments`:""}).</p></div>
+    <button class="btn ghost" id="editProf">Edit my profile</button></div>`;
+  if(picks.length){const verb=P.goal==="rent"?"to rent out":P.goal==="live"?"to live in":"for you";
+    h+=`<h3>Best matches ${verb}</h3><ol class="cl-picks">${picks.map(({d,x})=>{const why=[];
+      why.push(`needs ${sar(x.cash)} upfront`);why.push(`${sar(x.inst)}/month installment`);
+      if(P.goal!=="live")why.push(x.cf>=0?`+${fmt(x.cf)} SAR/month if rented`:`${fmt(Math.abs(x.cf))} SAR/month short if rented`);
+      if(x.lives&&P.goal!=="rent")why.push(x.inst<=x.rentM?`owning costs ${fmt(x.rentM-x.inst)} less a month than renting it`:`owning costs ${fmt(x.inst-x.rentM)} more a month than renting it`);
+      return `<li><button class="linkish" data-open="${d.id}"><b>${esc(d.id)} · ${esc(d.title)}</b></button> <span class="mini ${cls(x.label)}">${x.total}</span><br><span class="muted">${fmt(d.price)} SAR · ${esc(x.A.name)}, ${esc(x.A.city)} · ${why.join(" · ")}</span></li>`}).join("")}</ol>`;
+    if(P.goal==="live"&&!livePick.length)h+=`<p class="note">None of the listings you can afford are in ${esc(P.livesIn==="Other"?"your city":P.livesIn)}, so these are rentals elsewhere.</p>`;
+    if(P.goal==="rent"&&!rentPick.length)h+=`<p class="note">None of these pay for themselves as rentals at today's rates; each would need a monthly top-up from your salary.</p>`}
+  else{const cheapest=[...mine].sort((a,c)=>a.x.cash-c.x.cash)[0];
+    h+=`<h3>Nothing in these listings fits your profile yet</h3><p style="margin:0">${cheapest?`The easiest option, ${esc(cheapest.d.id)} (${k(cheapest.d.price)} in ${esc(cheapest.x.A.name)}), needs ${sar(cheapest.x.cash)} upfront and ${sar(cheapest.x.inst)} a month. ${cheapest.x.cash>P.cash?`You would need about ${sar(cheapest.x.cash-P.cash)} more savings`:`Your installment limit is ${sar(P.maxInst)}`}.`:"No listings match the cities and bedrooms you chose."} ${str.length?`${str.length} listing${str.length>1?"s are":" is"} a stretch for you; they are marked STRETCH below.`:""}</p>`}
+  const warn=[];
+  if(!P.saudi)warn.push("As a non-Saudi buyer you pay the 5% transaction tax, most banks ask for at least 30% down, and the unit must sit in an eligible ownership zone (apply through the Saudi Properties platform).");
+  else if(!P.firstHome)warn.push("Because this is not your first home, the 5% transaction tax applies and financing is modelled at 70%.");
+  if(P.oblig>P.salary*0.2)warn.push(`Your existing payments (${sar(P.oblig)}) take a large share of your borrowing room. Clearing a loan first may raise your budget more than saving.`);
+  if(P.employ==="retired")warn.push("Retiree financing varies by bank and is usually shorter; the limit here is an estimate.");
+  if(P.goal!=="live"&&P.cities.includes("Riyadh"))warn.push("Riyadh rents are frozen to about 2030, so a Riyadh rental's income will not grow.");
+  if(b.limit==="cash"&&state.s.comm)warn.push(`Buying direct from a developer removes the 2.5% + VAT broker fee and raises your limit to about ${k(budget({...state.s,comm:false}).maxPrice)}.`);
+  if(warn.length)h+=`<h3>Things that change your numbers</h3><ul class="qs">${warn.map(w=>`<li>${w}</li>`).join("")}</ul>`;
+  h+=DEALS.some(d=>d.live)?"":`<p class="note" style="margin:0">These picks come from the saved listings. Run a live search below to include what is on the market right now.</p>`;
+  h+=`<h3>Next steps</h3><ol class="qs"><li>Get a written financing offer from your salary bank; it may differ from these estimates.</li>${P.saudi?"<li>Check your eligibility for Sakani housing support before you sign.</li>":""}<li>Ask the seller for the electronic title deed and, for off-plan units, the Wafi licence number.</li><li>Visit the property with a REGA-licensed broker before paying any deposit.</li></ol>`;
+  el.innerHTML=h;document.getElementById("editProf").onclick=openWiz}
+
+// ---------- live search ----------
+const CITY_C={Riyadh:[24.774,46.738],Jeddah:[21.543,39.173],"Al Khobar":[26.279,50.208]};
+const CITY_TREND={Riyadh:AREAS.rimal.trend,Jeddah:{label:"GASTAT, Makkah region YoY (all property)",pts:[["Q1 2026",-0.7],["Q2 2026",0.4]],unit:"%"},"Al Khobar":AREAS.khobar.trend};
+const RENT_FB={Riyadh:{2:38000,3:45000,4:50000},Jeddah:{2:24000,3:25000,4:30000},"Al Khobar":{2:24000,3:28000,4:32000}};
+const LKEY="fhfLive.v1";
+const norm=t=>String(t||"").toLowerCase().replace(/^(al|el)[\s-]+/,"").replace(/[^a-z؀-ۿ]/g,"");
+function knownLL(city,district){const n=norm(district);if(!n)return null;const pts=DEALS.filter(d=>!d.live&&!d.approx&&AREAS[d.area].city===city&&norm(AREAS[d.area].name).startsWith(n.slice(0,5))).map(d=>d.ll);
+  if(!pts.length)return null;return [pts.reduce((a,p)=>a+p[0],0)/pts.length,pts.reduce((a,p)=>a+p[1],0)/pts.length]}
+const median=a=>{a=[...a].sort((x,y)=>x-y);const m=a.length>>1;return a.length?(a.length%2?a[m]:(a[m-1]+a[m])/2):0};
+function liveToDeals(res){
+  for(let i=DEALS.length-1;i>=0;i--)if(DEALS[i].live)DEALS.splice(i,1);
+  Object.keys(AREAS).filter(k=>k.startsWith("live:")).forEach(k=>delete AREAS[k]);
+  const L=res.listings||[];const date=new Date(res.finishedAt||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+  const byD={},byC={};L.forEach(l=>{const pp=l.price/l.size;(byD[l.city+"|"+norm(l.district)]=byD[l.city+"|"+norm(l.district)]||[]).push(pp);(byC[l.city]=byC[l.city]||[]).push(pp)});
+  L.forEach((l,i)=>{const dk=l.city+"|"+norm(l.district);const grp=byD[dk]&&byD[dk].length>=3?byD[dk]:byC[l.city];const key="live:"+dk;
+    const beds=l.beds||(l.size<90?2:l.size<140?3:4);const fb=RENT_FB[l.city][Math.min(4,Math.max(2,beds))];
+    const saved=Object.entries(AREAS).find(([k2,A2])=>!k2.startsWith("live:")&&A2.city===l.city&&norm(l.district).length>3&&norm(A2.name).startsWith(norm(l.district).slice(0,5)));
+    if(saved&&!AREAS[key])AREAS[key]={...saved[1],zone:l.city+" · live search",mojNote:(saved[1].mojNote||"")+"; benchmark from the saved "+saved[1].name+" sample"};
+    AREAS[key]=AREAS[key]||{name:l.district||l.city,ar:l.district_ar||"",city:l.city,zone:l.city+" · live search",ask:median(grp),askN:grp.length,moj:null,mojNote:grp===byC[l.city]?"Live result: benchmark is the median asking price of the listings found in this city":"Live result: benchmark is the median asking price of the listings found in this district",
+      rent2:RENT_FB[l.city][2],rent3:RENT_FB[l.city][3],freeze:l.city==="Riyadh",trend:CITY_TREND[l.city],rentTrend:l.city==="Riyadh"?"Frozen to ~Sep 2030 within Riyadh's urban boundary.":"No rent freeze in "+l.city+".",tx:"Not available for live results",liq:"Not available for live results",src:[]};
+    const ll=knownLL(l.city,l.district);const c=CITY_C[l.city];
+    DEALS.push({id:"L"+(i+1),live:true,approx:true,districtName:l.district,beds:l.beds||0,ll:ll||[c[0]+((i%5)-2)*0.004,c[1]+((i%3)-1)*0.004],url:l.url,area:key,type:l.type==="roof"?"roof":"apartment",
+      title:l.title||((l.beds?l.beds+"-bed ":"")+(l.type==="floor"?"floor":"apartment")+", "+Math.round(l.size)+" m²"),titleAr:l.title_ar||"",size:l.size,price:l.price,rooms:l.beds?l.beds+" bed":"Bedrooms not stated",
+      rent:l.rent||fb,rentEst:true,rentWhy:l.rent?"Rent seen in the search results: "+(l.rentBasis||"nearby advert")+".":"No rent found in the search; used typical "+l.city+" asking rents for "+beds+" bedrooms.",growth:8,risk:Math.max(2,6-Math.min(l.flags.length,4)),
+      facts:[`Found by live search on ${date} on ${l.source||"a listing site"}.`,l.posted?`Posted: ${l.posted}.`:"Posting date not seen.",...l.features],
+      flags:[...l.flags,"Found by AI search: open the advert and confirm it is still listed and the price and size match.",ll?"Pin shows the district, not the building.":"District not recognised: pin shows the city only."],
+      qs:["Is it still available at this price?","Electronic title deed and completion certificate?","Floor, elevator and parking?","Was it leased before? Last Ejar rent?","Any commission, and will you accept bank financing?"],
+      verdict:"Live search result. Its score uses the asking prices found in this search as the benchmark, so treat it as a first filter and check the advert before acting.",liveSrc:`Live search, ${date}, via ${l.source||"listing site"}.`,src:[]})});
+}
+function liveCriteria(){const b=budget(state.s);return {cities:PROFILE.cities,maxPrice:Math.max(150000,Math.round(b.maxPrice*1.15)),minBeds:PROFILE.minBeds,goal:PROFILE.goal}}
+function liveMsg(t){document.getElementById("liveStatus").textContent=t}
+let livePoll=null;
+async function runLive(){const btn=document.getElementById("liveGo");btn.disabled=true;clearTimeout(livePoll);
+  const crit=liveCriteria();liveMsg(`Starting a search for ${crit.cities.join(", ")} up to ${fmt(crit.maxPrice)} SAR…`);
+  let r,j;try{r=await fetch("/api/search-start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(crit)});j=await r.json()}catch(e){btn.disabled=false;return liveMsg("Live search only works on the published website, where its server functions run. Here you can still browse the saved listings below.")}
+  if(!r.ok||!j.id){btn.disabled=false;return liveMsg(j&&j.error?j.error:"The search could not start. Try again in a minute.")}
+  const t0=Date.now();const tick=async()=>{let s;try{s=await (await fetch("/api/search-status?id="+j.id)).json()}catch(e){s={}}
+    const sec=Math.round((Date.now()-t0)/1000);
+    if(s.status==="done"){btn.disabled=false;try{localStorage.setItem(LKEY,JSON.stringify({at:Date.now(),crit,res:s}))}catch(e){}showLive(s,j.cached);return}
+    if(s.status==="error"){btn.disabled=false;return liveMsg("The search failed: "+(s.message||"unknown error")+". Try again later.")}
+    if(sec>300){btn.disabled=false;return liveMsg("The search is taking too long. Try again later.")}
+    liveMsg(`Searching listing sites… ${sec}s (usually 60–180s). You can keep browsing.`);livePoll=setTimeout(tick,4000)};tick()}
+function showLive(s,cached){liveToDeals(s);mapS.b=null;render();const n=(s.listings||[]).length;
+  liveMsg(n?`Found ${n} current listing${n>1?"s":""}${cached?" (reused from a search for the same budget in the last few hours)":""}. They are marked "Live result" below and included in your conclusion.${s.dropped?` ${s.dropped} more ${s.dropped>1?"were":"was"} left out because their link or numbers could not be checked against the search results.`:""}${s.note?" "+s.note:""}`:"The search found no listings it could verify for your criteria. Try more cities or fewer bedrooms.")}
+document.getElementById("liveGo").addEventListener("click",runLive);
+try{const v=JSON.parse(localStorage.getItem(LKEY)||"null");if(v&&Date.now()-v.at<24*3600e3&&v.res&&v.res.listings)setTimeout(()=>{liveToDeals(v.res);render();liveMsg(`Showing the live search from ${new Date(v.at).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}. Search again for fresh results.`)},0)}catch(e){}
+function boot(){const p=loadProfile();if(p){applyProfile(p);showResults();window.scrollTo(0,0)}else openWiz()}
+boot();
+
+</script>
+
+</body>
+</html>
