@@ -12,10 +12,9 @@ function cleanCriteria(c) {
   const cities = Array.isArray(c.cities) ? c.cities.filter(x => CITIES.includes(x)) : [];
   const maxPrice = Math.round(Number(c.maxPrice));
   const minBeds = [0, 2, 3].includes(Number(c.minBeds)) ? Number(c.minBeds) : 0;
-  const goal = ["rent", "live", "either"].includes(c.goal) ? c.goal : "either";
   if (!cities.length || !(maxPrice >= 150000 && maxPrice <= 5000000)) return null;
   const bucket = Math.ceil(maxPrice / 25000) * 25000; // group similar budgets so results can be reused
-  return { cities: [...cities].sort(), maxPrice: bucket, minPrice: Math.round(bucket * 0.55 / 10000) * 10000, minBeds, goal };
+  return { cities: [...cities].sort(), maxPrice: bucket, minPrice: Math.round(bucket * 0.55 / 10000) * 10000, minBeds };
 }
 
 
