@@ -4,7 +4,7 @@ const jobs = () => getStore({ name: "fhf-jobs", consistency: "strong" });
 const env = (k, d) => { let v = Netlify.env.get(k); if (typeof v === "string") v = v.trim().replace(/^["']|["']$/g, ""); return v === undefined || v === "" ? d : v; };
 async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 32); }
 
-const WORKER_V = "v10-2026-10-26";
+const WORKER_V = "v11-2026-10-26";
 const SITES =["aqar.fm", "bayut.sa", "propertyfinder.sa", "wasalt.sa"];
 const DISTRICTS = {
   Riyadh: "North: Al Malqa, Al Yasmin, Al Narjis, Al Arid, Hittin, Al Qirawan, Al Nada, Al Sahafa. East: Al Rimal, Qurtubah, Al Yarmuk, Ishbiliyah, Al Munsiyah, Al Nahdah, Ghirnatah",
@@ -75,11 +75,14 @@ async function searchCity(city, crit) {
     }
     const parsed = extractJson(text) || { listings: [] };
     const raw = Array.isArray(parsed.listings) ? parsed.listings.slice(0, 12) : [];
-    const listings = [], why = {};
+    const listings = [], why = {}, seenUnits = new Set();
     const drop = r => { why[r] = (why[r] || 0) + 1; };
     for (const x of raw) {
       const price = num(x.price_sar), size = num(x.size_m2);
       if (!price || !size || price < 50000 || price > 20e6 || size < 30 || size > 2000) { drop("price or size missing/odd"); continue; }
+      if (price > crit.maxPrice * 1.05) { drop("above the visitor's budget"); continue; }
+      const dupKey = [price, size, str(x.district, 60).toLowerCase()].join("|");
+      if (seenUnits.has(dupKey)) { drop("duplicate"); continue; } seenUnits.add(dupKey);
       const real = seen.get(normUrl(x.url));
       if (!real || !/^https:\/\/([a-z0-9-]+\.)*(aqar\.fm|bayut\.sa|propertyfinder\.sa|wasalt\.sa)\//i.test(real)) { drop("link not in search results"); continue; }
       listings.push({ title: str(x.title), title_ar: str(x.title_ar), city, district: str(x.district, 60), district_ar: str(x.district_ar, 60),
